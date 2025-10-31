@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - Interview Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #f3f4f6;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 text-gray-100 flex flex-col min-h-screen">
+  <!-- Header -->
+  <div class="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-lg border-b border-gray-700/50 shadow-lg">
+    <div class="max-w-full px-8 py-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-extrabold bg-gradient-to-r from-red-500 via-orange-500 to-red-600 bg-clip-text text-transparent">
+          🔐 Admin Panel
+        </h1>
+        <button id="logoutBtn" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-all" style="display:none;">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login Screen -->
+  <div id="loginScreen" class="flex-1 flex items-center justify-center px-6 fade-in">
+    <div class="w-full max-w-md">
+      <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl p-8">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">Admin Login</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <input type="password" id="adminPassword" class="w-full px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Enter admin password">
+          </div>
+          
+          <button id="loginBtn" class="w-full mt-6 px-4 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-bold transition-all shadow-lg">
+            Login
+          </button>
+        </div>
+        
+        <p id="loginError" class="text-red-400 text-sm mt-4 text-center" style="display:none;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" style="display:none;" class="flex-1 overflow-auto">
+    <div class="max-w-6xl mx-auto px-8 py-10">
+      <div class="space-y-8 fade-in">
+        
+        <!-- Configuration Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>⚙️</span> Configuration
+          </h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Google Sheet ID</label>
+              <input type="text" id="sheetIdInput" class="w-full px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Paste your Google Sheet ID">
+              <p class="text-xs text-gray-400 mt-2">Found in your sheet URL: https://docs.google.com/spreadsheets/d/<span class="text-orange-400">THIS_ID</span>/edit</p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Server Refresh Interval (ms)</label>
+              <input type="number" id="refreshIntervalInput" class="w-full px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., 4000" value="4000">
+              <p class="text-xs text-gray-400 mt-2">How often the server fetches from Google Sheets (in milliseconds)</p>
+            </div>
+            
+            <button id="saveConfigBtn" class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold transition-all shadow-lg">
+              Save Configuration
+            </button>
+            <p id="configMessage" class="text-sm" style="display:none;"></p>
+          </div>
+        </div>
+
+        <!-- Data Management Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>🔄</span> Data Management
+          </h2>
+          
+          <div class="space-y-4">
+            <button id="refreshDataBtn" class="w-full px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold transition-all shadow-lg">
+              🔄 Force Refresh Data from Google Sheets
+            </button>
+            
+            <div id="dataStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div class="bg-gray-700 rounded-lg p-4 text-center">
+                <p class="text-gray-400 text-sm">Round 1 Records</p>
+                <p class="text-2xl font-bold text-blue-400" id="round1Count">0</p>
+              </div>
+              <div class="bg-gray-700 rounded-lg p-4 text-center">
+                <p class="text-gray-400 text-sm">Round 2 Records</p>
+                <p class="text-2xl font-bold text-indigo-400" id="round2Count">0</p>
+              </div>
+              <div class="bg-gray-700 rounded-lg p-4 text-center">
+                <p class="text-gray-400 text-sm">Server Status</p>
+                <p class="text-2xl font-bold text-green-400">🟢 Active</p>
+              </div>
+              <div class="bg-gray-700 rounded-lg p-4 text-center">
+                <p class="text-gray-400 text-sm">Last Updated</p>
+                <p class="text-sm font-bold text-yellow-400" id="lastUpdated">--:--</p>
+              </div>
+            </div>
+            
+            <p id="refreshMessage" class="text-sm" style="display:none;"></p>
+          </div>
+        </div>
+
+        <!-- Display Settings Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>🎛️</span> Display Settings
+          </h2>
+          
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-2">Number of Panels to Display</label>
+              <input type="number" id="panelsCountInput" class="w-full px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., 2" min="1" value="3">
+              <p class="text-xs text-gray-400 mt-2">Set how many panel cards to show on the public dashboard (1-10)</p>
+            </div>
+            
+            <button id="savePanelsBtn" class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold transition-all shadow-lg">
+              Save Display Settings
+            </button>
+            <p id="panelsMessage" class="text-sm" style="display:none;"></p>
+          </div>
+        </div>
+
+        <!-- Round 2 Settings Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>②</span> Round 2 Control
+          </h2>
+          
+          <div class="space-y-4">
+            <div class="flex items-center justify-between bg-gray-700 rounded-lg p-4">
+              <div>
+                <p class="text-white font-medium">Enable Round 2 Shortlists</p>
+                <p class="text-xs text-gray-400 mt-1">Show Round 2 candidates on the public dashboard</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button id="round2EnableBtn" class="px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-gray-600 hover:bg-gray-500 text-gray-300">
+                  <span class="text-lg">✓</span> Enable
+                </button>
+                <button id="round2DisableBtn" class="px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-gray-600 hover:bg-gray-500 text-gray-300">
+                  <span class="text-lg">✗</span> Disable
+                </button>
+              </div>
+            </div>
+            <p id="round2Message" class="text-sm" style="display:none;"></p>
+          </div>
+        </div>
+
+        <!-- Process Flow Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>📋</span> Interview Process Flow
+          </h2>
+          
+          <div class="space-y-4">
+            <div id="processFlowSteps" class="space-y-3">
+              <div class="flex items-center gap-2">
+                <input type="text" placeholder="Step 1: e.g., GD (Group Discussion)" class="step-input flex-1 px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" data-step="0">
+              </div>
+            </div>
+            
+            <button id="addStepBtn" class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold transition-all text-sm">
+              + Add Step
+            </button>
+            
+            <button id="saveFlowBtn" class="px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-bold transition-all shadow-lg">
+              Save Process Flow
+            </button>
+            
+            <p id="flowMessage" class="text-sm" style="display:none;"></p>
+          </div>
+        </div>
+
+        <!-- Panel Status Management Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>🎙️</span> Panel Status Management
+          </h2>
+          
+          <div class="space-y-4" id="panelStatusControls">
+            <p class="text-gray-400 text-sm">Loading panels...</p>
+          </div>
+          <p id="panelStatusMessage" class="text-sm mt-4" style="display:none;"></p>
+        </div>
+
+        <!-- Panel Status Management Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>🎙️</span> Panel Status Management
+          </h2>
+          
+          <div class="space-y-4" id="panelStatusControls">
+            <p class="text-gray-400 text-sm">Loading panels...</p>
+          </div>
+          <p id="panelStatusMessage" class="text-sm mt-4" style="display:none;"></p>
+        </div>
+
+        <!-- Quick Links Section -->
+        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-lg p-8">
+          <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+            <span>🔗</span> Quick Links
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="/" class="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all text-center">
+              👁️ View Public Dashboard
+            </a>
+            <button id="viewConfigBtn" class="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all">
+              📋 View Current Config
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loginScreen = document.getElementById('loginScreen');
+    const adminDashboard = document.getElementById('adminDashboard');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const adminPassword = document.getElementById('adminPassword');
+    const loginError = document.getElementById('loginError');
+    
+    const saveConfigBtn = document.getElementById('saveConfigBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const sheetIdInput = document.getElementById('sheetIdInput');
+    const refreshIntervalInput = document.getElementById('refreshIntervalInput');
+    const configMessage = document.getElementById('configMessage');
+    const refreshMessage = document.getElementById('refreshMessage');
+    const viewConfigBtn = document.getElementById('viewConfigBtn');
+
+    let isAuthenticated = false;
+
+    // Check if already logged in
+    function checkAuth() {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        isAuthenticated = true;
+        showDashboard();
+      }
+    }
+
+    // Login
+    loginBtn.addEventListener('click', async () => {
+      const password = adminPassword.value.trim();
+      if (!password) {
+        loginError.textContent = 'Please enter a password';
+        loginError.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          localStorage.setItem('adminToken', result.token);
+          isAuthenticated = true;
+          showDashboard();
+        } else {
+          loginError.textContent = result.error || 'Invalid password';
+          loginError.style.display = 'block';
+        }
+      } catch (error) {
+        loginError.textContent = 'Login failed: ' + error.message;
+        loginError.style.display = 'block';
+      }
+    });
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('adminToken');
+      isAuthenticated = false;
+      adminPassword.value = '';
+      loginError.style.display = 'none';
+      showLogin();
+    });
+
+    function showLogin() {
+      loginScreen.style.display = 'flex';
+      adminDashboard.style.display = 'none';
+      logoutBtn.style.display = 'none';
+    }
+
+    function showDashboard() {
+      loginScreen.style.display = 'none';
+      adminDashboard.style.display = 'block';
+      logoutBtn.style.display = 'block';
+      loadDashboardData();
+    }
+
+    // Save Configuration
+    saveConfigBtn.addEventListener('click', async () => {
+      const sheetId = sheetIdInput.value.trim();
+      const refreshInterval = refreshIntervalInput.value.trim();
+
+      if (!sheetId) {
+        configMessage.textContent = 'Sheet ID is required';
+        configMessage.style.color = '#f87171';
+        configMessage.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ sheetId, refreshInterval: parseInt(refreshInterval) || 4000 })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          configMessage.textContent = 'Configuration saved successfully!';
+          configMessage.style.color = '#86efac';
+        } else {
+          configMessage.textContent = result.error || 'Failed to save';
+          configMessage.style.color = '#f87171';
+        }
+        configMessage.style.display = 'block';
+      } catch (error) {
+        configMessage.textContent = 'Error: ' + error.message;
+        configMessage.style.color = '#f87171';
+        configMessage.style.display = 'block';
+      }
+    });
+
+    // Force Refresh Data
+    refreshDataBtn.addEventListener('click', async () => {
+      refreshDataBtn.disabled = true;
+      refreshDataBtn.textContent = '⏳ Refreshing...';
+
+      try {
+        const response = await fetch('/api/refresh', { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+          refreshMessage.textContent = 'Data refreshed successfully!';
+          refreshMessage.style.color = '#86efac';
+          loadDashboardData();
+        } else {
+          refreshMessage.textContent = result.error || 'Refresh failed';
+          refreshMessage.style.color = '#f87171';
+        }
+      } catch (error) {
+        refreshMessage.textContent = 'Error: ' + error.message;
+        refreshMessage.style.color = '#f87171';
+      }
+
+      refreshMessage.style.display = 'block';
+      refreshDataBtn.disabled = false;
+      refreshDataBtn.textContent = '🔄 Force Refresh Data from Google Sheets';
+    });
+
+    // View Current Config
+    viewConfigBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/admin/config', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Current Configuration:\n\nSheet ID: ' + result.config.sheetId + '\nRefresh Interval: ' + result.config.refreshInterval + 'ms');
+        } else {
+          alert('Failed to load configuration');
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    });
+
+    // Save Display Settings (Panels Count)
+    const savePanelsBtn = document.getElementById('savePanelsBtn');
+    const panelsCountInput = document.getElementById('panelsCountInput');
+    const panelsMessage = document.getElementById('panelsMessage');
+
+    savePanelsBtn.addEventListener('click', async () => {
+      const panelsCount = parseInt(panelsCountInput.value);
+      if (!panelsCount || panelsCount < 1 || panelsCount > 10) {
+        panelsMessage.textContent = 'Please enter a number between 1 and 10';
+        panelsMessage.style.color = '#f87171';
+        panelsMessage.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/panels-count', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ panelsCount })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          panelsMessage.textContent = 'Display set to ' + panelsCount + ' panels';
+          panelsMessage.style.color = '#86efac';
+        } else {
+          panelsMessage.textContent = result.error || 'Failed to save';
+          panelsMessage.style.color = '#f87171';
+        }
+      } catch (error) {
+        panelsMessage.textContent = 'Error: ' + error.message;
+        panelsMessage.style.color = '#f87171';
+      }
+      panelsMessage.style.display = 'block';
+    });
+
+    // Round 2 Toggle
+    const round2EnableBtn = document.getElementById('round2EnableBtn');
+    const round2DisableBtn = document.getElementById('round2DisableBtn');
+    const round2Message = document.getElementById('round2Message');
+
+    async function loadRound2Status() {
+      try {
+        const response = await fetch('/api/admin/round2-status', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        });
+        const result = await response.json();
+        updateRound2Buttons(result.round2Enabled);
+      } catch (error) {
+        console.error('Failed to load Round 2 status:', error);
+      }
+    }
+
+    function updateRound2Buttons(enabled) {
+      if (enabled) {
+        round2EnableBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/50';
+        round2DisableBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-gray-600 hover:bg-gray-500 text-gray-300';
+      } else {
+        round2EnableBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-gray-600 hover:bg-gray-500 text-gray-300';
+        round2DisableBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/50';
+      }
+    }
+
+    round2EnableBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/admin/round2-toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ enabled: true })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          round2Message.textContent = result.message;
+          round2Message.style.color = '#86efac';
+          updateRound2Buttons(true);
+        } else {
+          round2Message.textContent = result.error || 'Failed';
+          round2Message.style.color = '#f87171';
+        }
+      } catch (error) {
+        round2Message.textContent = 'Error: ' + error.message;
+        round2Message.style.color = '#f87171';
+      }
+      round2Message.style.display = 'block';
+      setTimeout(() => round2Message.style.display = 'none', 3000);
+    });
+
+    round2DisableBtn.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/admin/round2-toggle', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ enabled: false })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          round2Message.textContent = result.message;
+          round2Message.style.color = '#86efac';
+          updateRound2Buttons(false);
+        } else {
+          round2Message.textContent = result.error || 'Failed';
+          round2Message.style.color = '#f87171';
+        }
+      } catch (error) {
+        round2Message.textContent = 'Error: ' + error.message;
+        round2Message.style.color = '#f87171';
+      }
+      round2Message.style.display = 'block';
+      setTimeout(() => round2Message.style.display = 'none', 3000);
+    });
+
+    async function loadDashboardData() {
+      try {
+        const response = await fetch('/api/admin/stats', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          document.getElementById('round1Count').textContent = result.stats.round1Count;
+          document.getElementById('round2Count').textContent = result.stats.round2Count;
+          const now = new Date(result.stats.lastUpdated);
+          document.getElementById('lastUpdated').textContent = now.toLocaleTimeString();
+          
+          // Load panel statuses and Round 2 status after getting stats
+          loadPanelStatuses();
+          loadRound2Status();
+          loadProcessFlow();
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    // Process Flow Management
+    const addStepBtn = document.getElementById('addStepBtn');
+    const saveFlowBtn = document.getElementById('saveFlowBtn');
+    const processFlowSteps = document.getElementById('processFlowSteps');
+    const flowMessage = document.getElementById('flowMessage');
+
+    async function loadProcessFlow() {
+      try {
+        const response = await fetch('/api/admin/process-flow', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        });
+        const result = await response.json();
+        
+        if (result.success && result.processFlow && result.processFlow.length > 0) {
+          processFlowSteps.innerHTML = '';
+          result.processFlow.forEach((step, index) => {
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'flex items-center gap-2';
+            const stepInput = document.createElement('input');
+            stepInput.type = 'text';
+            stepInput.value = step;
+            stepInput.className = 'step-input flex-1 px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+            stepInput.setAttribute('data-step', index);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-step-btn px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-all text-sm';
+            removeBtn.textContent = 'Remove';
+            removeBtn.setAttribute('data-step', index);
+            removeBtn.addEventListener('click', (e) => {
+              e.target.parentElement.remove();
+            });
+            
+            stepDiv.appendChild(stepInput);
+            stepDiv.appendChild(removeBtn);
+            processFlowSteps.appendChild(stepDiv);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load process flow:', error);
+      }
+    }
+
+    addStepBtn.addEventListener('click', () => {
+      const stepCount = processFlowSteps.querySelectorAll('.step-input').length;
+      const stepDiv = document.createElement('div');
+      stepDiv.className = 'flex items-center gap-2';
+      
+      const stepInput = document.createElement('input');
+      stepInput.type = 'text';
+      stepInput.placeholder = 'Step ' + (stepCount + 1) + ': e.g., Interview Round';
+      stepInput.className = 'step-input flex-1 px-4 py-2.5 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
+      stepInput.setAttribute('data-step', stepCount);
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-step-btn px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-all text-sm';
+      removeBtn.textContent = 'Remove';
+      removeBtn.setAttribute('data-step', stepCount);
+      removeBtn.addEventListener('click', (e) => {
+        e.target.parentElement.remove();
+      });
+      
+      stepDiv.appendChild(stepInput);
+      stepDiv.appendChild(removeBtn);
+      processFlowSteps.appendChild(stepDiv);
+    });
+
+    saveFlowBtn.addEventListener('click', async () => {
+      const steps = Array.from(processFlowSteps.querySelectorAll('.step-input')).map(input => input.value.trim()).filter(v => v);
+      
+      if (steps.length === 0) {
+        flowMessage.textContent = 'Please add at least one step';
+        flowMessage.style.color = '#f87171';
+        flowMessage.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/process-flow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ steps })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          flowMessage.textContent = 'Process flow saved!';
+          flowMessage.style.color = '#86efac';
+          loadProcessFlow();
+        } else {
+          flowMessage.textContent = result.error || 'Failed to save';
+          flowMessage.style.color = '#f87171';
+        }
+      } catch (error) {
+        flowMessage.textContent = 'Error: ' + error.message;
+        flowMessage.style.color = '#f87171';
+      }
+      flowMessage.style.display = 'block';
+      setTimeout(() => flowMessage.style.display = 'none', 3000);
+    });
+
+    async function loadPanelStatuses() {
+      try {
+        // Fetch all data to get panel names
+        const dataResponse = await fetch('/api/data?round=round1');
+        const dataResult = await dataResponse.json();
+        
+        if (!dataResult.success || !dataResult.data) return;
+        
+        // Get panel statuses from backend
+        const statusResponse = await fetch('/api/admin/panel-statuses', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+        });
+        const statusResult = await statusResponse.json();
+        const statuses = statusResult.statuses || {};
+        
+        // Extract unique panel names
+        const panelNames = [...new Set(dataResult.data.map(p => p.panel))];
+        
+        // Build UI for panel status controls
+        const controlsDiv = document.getElementById('panelStatusControls');
+        controlsDiv.innerHTML = '';
+        
+        if (panelNames.length === 0) {  
+          controlsDiv.innerHTML = '<p class="text-gray-400 text-sm">No panels available</p>';
+          return;
+        }
+        
+        panelNames.forEach(panelName => {
+          const currentStatus = statuses[panelName] || 'live';
+          const container = document.createElement('div');
+          container.className = 'flex items-center justify-between bg-gradient-to-r from-gray-700 to-gray-600 rounded-xl p-4 hover:from-gray-600 hover:to-gray-500 transition-all';
+          
+          const label = document.createElement('span');
+          label.className = 'text-white font-bold flex-1 text-lg';
+          label.textContent = panelName;
+          
+          const toggleContainer = document.createElement('div');
+          toggleContainer.className = 'flex items-center gap-2 bg-gray-800 rounded-lg p-1';
+          
+          const liveBtn = document.createElement('button');
+          liveBtn.type = 'button';
+          liveBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm ' + 
+            (currentStatus === 'live' 
+              ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/50' 
+              : 'text-gray-400 hover:text-gray-300');
+          liveBtn.innerHTML = '<span class="text-lg">🟢</span> Live';
+          liveBtn.addEventListener('click', () => updatePanelStatus(panelName, 'live'));
+          
+          const breakBtn = document.createElement('button');
+          breakBtn.type = 'button';
+          breakBtn.className = 'px-6 py-2 rounded-lg font-bold transition-all duration-200 text-sm ' + 
+            (currentStatus === 'break' 
+              ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/50' 
+              : 'text-gray-400 hover:text-gray-300');
+          breakBtn.innerHTML = '<span class="text-lg">🔴</span> Break';
+          breakBtn.addEventListener('click', () => updatePanelStatus(panelName, 'break'));
+          
+          toggleContainer.appendChild(liveBtn);
+          toggleContainer.appendChild(breakBtn);
+          container.appendChild(label);
+          container.appendChild(toggleContainer);
+          controlsDiv.appendChild(container);
+        });
+      } catch (error) {
+        console.error('Failed to load panel statuses:', error);
+      }
+    }
+
+    async function updatePanelStatus(panelName, status) {
+      try {
+        const response = await fetch('/api/admin/panel-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+          },
+          body: JSON.stringify({ panelName, status })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          const panelStatusMessage = document.getElementById('panelStatusMessage');
+          panelStatusMessage.textContent = result.message;
+          panelStatusMessage.style.color = '#86efac';
+          panelStatusMessage.style.display = 'block';
+          setTimeout(() => panelStatusMessage.style.display = 'none', 3000);
+          
+          // Reload panel statuses to update UI
+          loadPanelStatuses();
+        }
+      } catch (error) {
+        console.error('Failed to update panel status:', error);
+      }
+    }
+
+    checkAuth();
+  </script>
+</body>
+</html>
