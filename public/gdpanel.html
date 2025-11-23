@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GD Panel - Live Names</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html,body{height:100%;margin:0;background:#f8fafc;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,'Helvetica Neue',Arial}
+    .fade-in{animation:fadeIn .28s ease-in-out}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-3 shadow-md">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <h1 class="text-lg font-bold">GD Panel - Live Names</h1>
+      <a href="/" class="text-sm bg-white/20 px-3 py-1 rounded-lg">Back</a>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl mx-auto w-full p-4">
+    <p class="text-sm text-gray-600 mb-3">This view shows up to 5 panels side-by-side with only candidate names. Auto-refreshes every 8s.</p>
+
+    <div id="grid" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"></div>
+
+    <p id="status" class="text-xs text-gray-400 mt-4"></p>
+  </main>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const status = document.getElementById('status');
+    const POLL_MS = 8000;
+
+    function getName(item) {
+      if (!item) return 'Unknown';
+      if (item.Name && item.Name.trim()) return item.Name;
+      if (item.Email) {
+        return item.Email.split('@')[0].replace(/[._-]/g,' ').split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+      }
+      return 'Unknown';
+    }
+
+    function emptyCard(idx) {
+      const card = document.createElement('div');
+      card.className = 'rounded-xl bg-white shadow-sm p-4 min-h-[72px]';
+      card.innerHTML = `<h3 class=\"text-sm font-semibold text-gray-700\">Panel ${idx+1}</h3><div class=\"mt-3 text-sm text-gray-500\">No data</div>`;
+      return card;
+    }
+
+    function buildCard(panelGroup) {
+      const card = document.createElement('div');
+      card.className = 'rounded-xl bg-white shadow p-4 flex flex-col';
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between';
+      const title = document.createElement('h3');
+      title.className = 'text-sm font-semibold text-gray-800';
+      title.textContent = panelGroup.panel || 'Unknown Panel';
+      header.appendChild(title);
+      card.appendChild(header);
+
+      const list = document.createElement('ul');
+      list.className = 'mt-3 space-y-2 flex-1';
+
+      const items = (panelGroup.items || []).slice(0, 12);
+      if (items.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'text-sm text-gray-500';
+        li.textContent = 'No candidates';
+        list.appendChild(li);
+      } else {
+        for (const it of items) {
+          const li = document.createElement('li');
+          li.className = 'text-sm text-gray-700';
+          li.textContent = getName(it);
+          list.appendChild(li);
+        }
+      }
+
+      card.appendChild(list);
+      return card;
+    }
+
+    async function fetchAndRender() {
+      try {
+        status.textContent = 'Updating...';
+        const res = await fetch('/api/data?statuses=ongoing,beready&round=round1');
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error || 'No success');
+
+        const panels = json.data || [];
+        // show up to 5 panels; if fewer, pad empties
+        grid.innerHTML = '';
+        for (let i=0;i<5;i++) {
+          const group = panels[i];
+          if (group) grid.appendChild(buildCard(group));
+          else grid.appendChild(emptyCard(i));
+        }
+
+        const t = new Date(json.lastUpdated || Date.now());
+        status.textContent = 'Last updated: ' + t.toLocaleString();
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Update failed: ' + (err.message || err);
+      }
+    }
+
+    // initial
+    fetchAndRender();
+    setInterval(fetchAndRender, POLL_MS);
+  </script>
+</body>
+</html>

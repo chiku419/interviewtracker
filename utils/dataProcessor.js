@@ -90,7 +90,9 @@ function filterAndGroupData(data, filters) {
     // Add other items if their status is active (avoid duplicating the Be Ready row)
     for (let i = 0; i < panelRows.length; i++) {
       const item = panelRows[i];
-      const status = normalizeStatus(item['Status']);
+      let status = normalizeStatus(item['Status']);
+      if (status === '') status = 'pending'; // Treat empty status as pending
+
       const isOngoing = status === 'ongoing';
       const isBeReadyRow = beReadyRow ? item === beReadyRow : false;
       if (!isOngoing && !isBeReadyRow && activeStatuses.has(status)) {
@@ -108,7 +110,7 @@ function filterAndGroupData(data, filters) {
     const displayWithBeReady = display.map((item, index) => {
       const status = normalizeStatus(item['Status']);
       const ongoingCount = display.filter(r => normalizeStatus(r['Status']) === 'ongoing').length;
-      
+
       let displayStatus = item['Status'];
       let showAsBeReady = false;
 

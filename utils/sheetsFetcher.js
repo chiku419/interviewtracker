@@ -3,6 +3,11 @@ const { parse } = require('csv-parse/sync');
 
 // Prefer environment variable, fall back to legacy hardcoded ID for backwards compatibility
 const SHEET_ID = process.env.GOOGLE_SHEET_ID || '1lpIbY3IzIOfGmIV0YLb7oC4uJ6GcBj_w0S8k8SBaAvY';
+// Configurable fetch timeout and retry attempts
+const TIMEOUT_MS = parseInt(process.env.SHEET_FETCH_TIMEOUT_MS || '15000', 10);
+const MAX_FETCH_ATTEMPTS = parseInt(process.env.SHEET_FETCH_ATTEMPTS || '2', 10);
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 // Normalize column names for Round 2 data
 function normalizeRound2Row(row) {
@@ -19,20 +24,44 @@ function normalizeRound2Row(row) {
 
 async function fetchSheetByName(sheetName) {
   try {
+    if (!SHEET_ID) throw new Error('GOOGLE_SHEET_ID is not set');
+
     // Fetch from specific sheet by name (gid parameter for sheet ID, but we use sheet name in export)
     const csvURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    
-    // Try direct fetch
+
     let response;
-    try {
-      response = await axios.get(csvURL, {
-        headers: { 'Accept': 'text/csv' },
-        timeout: 5000
-      });
-    } catch (error) {
-      // Fallback to CORS proxy
-      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvURL)}`;
-      response = await axios.get(proxyUrl, { timeout: 5000 });
+    let lastErr;
+    // Try a couple of attempts before failing, try direct then proxy per attempt
+    for (let attempt = 1; attempt <= MAX_FETCH_ATTEMPTS; attempt++) {
+      try {
+        response = await axios.get(csvURL, {
+          headers: { 'Accept': 'text/csv' },
+          timeout: TIMEOUT_MS
+        });
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`fetchSheetByName: direct fetch attempt ${attempt} failed for sheet="${sheetName}" (${csvURL}): ${err.message}`);
+        // Try CORS proxy as a fallback
+        try {
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(csvURL)}`;
+          response = await axios.get(proxyUrl, { timeout: TIMEOUT_MS });
+          lastErr = null;
+          break;
+        } catch (err2) {
+          lastErr = err2;
+          console.warn(`fetchSheetByName: proxy fetch attempt ${attempt} failed for sheet="${sheetName}": ${err2.message}`);
+        }
+      }
+
+      // wait a bit before retrying (backoff)
+      if (attempt < MAX_FETCH_ATTEMPTS) await sleep(500 * attempt);
+    }
+
+    if (!response) {
+      // provide a helpful error message including sheetName and sheet id
+      throw new Error(`Failed to fetch sheet "${sheetName}" after ${MAX_FETCH_ATTEMPTS} attempts: ${lastErr ? lastErr.message : 'no response'}`);
     }
 
     const csv = response.data;

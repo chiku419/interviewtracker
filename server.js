@@ -18,12 +18,19 @@ app.use(express.json());
 
 // Admin auth middleware
 function verifyAdminToken(req, res, next) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ success: false, error: 'No token' });
+  // Normalize token extraction and treat literal 'null'/'undefined' as missing
+  const raw = req.headers.authorization;
+  const token = raw && raw.startsWith('Bearer ') ? raw.slice(7) : raw;
+  if (!token || token === 'null' || token === 'undefined') {
+    return res.status(401).json({ success: false, error: 'No token' });
+  }
+
   try {
     jwt.verify(token, JWT_SECRET);
     next();
-  } catch {
+  } catch (err) {
+    // Log the underlying JWT error to help debugging (safe for dev environments)
+    console.error('JWT verification failed:', err && err.message ? err.message : err);
     res.status(401).json({ success: false, error: 'Invalid token' });
   }
 }
@@ -39,6 +46,7 @@ let isRefreshing = false;
 let maxPanelsToDisplay = 3; // Default to 3 panels
 let panelStatuses = {}; // Store panel live/break status: { "Panel Name": "live" | "break" }
 let round2Enabled = false; // Toggle for Round 2 display
+let round1Enabled = true; // Toggle for Round 1 display (default: enabled)
 let processFlow = []; // Store the interview process flow steps
 
 // API endpoint: Get filtered data
@@ -93,15 +101,15 @@ app.post('/api/refresh', async (req, res) => {
   }
 });
 
-  // Background refresh
-  setInterval(async () => {
-    try {
-      await refreshData();
-      process.stdout.write('.'); // heartbeat
-    } catch (e) {
-      console.error('\nBackground refresh failed:', e.message);
-    }
-  }, REFRESH_INTERVAL_MS);
+// Background refresh
+setInterval(async () => {
+  try {
+    await refreshData();
+    process.stdout.write('.'); // heartbeat
+  } catch (e) {
+    console.error('\nBackground refresh failed:', e.message);
+  }
+}, REFRESH_INTERVAL_MS);
 // Serve logo asset from project root
 app.get('/logo.jpeg', (req, res) => {
   res.sendFile(path.join(__dirname, 'logo.jpeg'));
@@ -133,7 +141,7 @@ app.get('/api/admin/config', verifyAdminToken, (req, res) => {
 app.post('/api/admin/config', verifyAdminToken, (req, res) => {
   const { sheetId, refreshInterval } = req.body;
   if (!sheetId) return res.status(400).json({ success: false, error: 'Sheet ID required' });
-  
+
   // In production, you'd persist this to a config file or database
   // For now, we just acknowledge it
   res.json({
@@ -211,6 +219,26 @@ app.get('/api/round2-enabled', (req, res) => {
   res.json({ round2Enabled });
 });
 
+// Admin API: Get Round 1 enabled status
+app.get('/api/admin/round1-status', verifyAdminToken, (req, res) => {
+  res.json({ success: true, round1Enabled });
+});
+
+// Admin API: Toggle Round 1
+app.post('/api/admin/round1-toggle', verifyAdminToken, (req, res) => {
+  const { enabled } = req.body;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ success: false, error: 'enabled must be boolean' });
+  }
+  round1Enabled = enabled;
+  res.json({ success: true, message: 'Round 1 ' + (enabled ? 'enabled' : 'disabled'), round1Enabled });
+});
+
+// Public API: Get Round 1 enabled status
+app.get('/api/round1-enabled', (req, res) => {
+  res.json({ round1Enabled });
+});
+
 // Admin API: Get process flow
 app.get('/api/admin/process-flow', verifyAdminToken, (req, res) => {
   res.json({ success: true, processFlow });
@@ -229,6 +257,43 @@ app.post('/api/admin/process-flow', verifyAdminToken, (req, res) => {
 // Public API: Get process flow
 app.get('/api/process-flow', (req, res) => {
   res.json({ processFlow });
+});
+
+// Company Logo Management
+let companyLogoUrl = '/logo.jpeg'; // Default logo
+
+// Admin API: Set company logo
+app.post('/api/admin/logo', verifyAdminToken, (req, res) => {
+  const { logoUrl } = req.body;
+  if (!logoUrl || typeof logoUrl !== 'string') {
+    return res.status(400).json({ success: false, error: 'Invalid logo URL' });
+  }
+  companyLogoUrl = logoUrl;
+  res.json({ success: true, message: 'Company logo updated', logoUrl: companyLogoUrl });
+});
+
+// Public API: Get company logo
+app.get('/api/logo', (req, res) => {
+  res.json({ logoUrl: companyLogoUrl });
+});
+
+// Company Name Management
+let companyName = 'Company'; // Default name
+
+// Admin API: Set company name
+app.post('/api/admin/company-name', verifyAdminToken, (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ success: false, error: 'Invalid company name' });
+  }
+  companyName = name;
+  res.json({ success: true, message: 'Company name updated', companyName });
+});
+
+// Public API: Get company name
+app.get('/api/company-name', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ companyName });
 });
 
 // Serve logo asset from project root
@@ -266,14 +331,14 @@ async function refreshData() {
 // Start server
 app.listen(PORT, async () => {
   await initializeData();
-    // Background refresh starts after init
-    setInterval(async () => {
-      try {
-        await refreshData();
-        process.stdout.write('.'); // heartbeat
-      } catch (e) {
-        console.error('\nBackground refresh failed:', e.message);
-      }
-    }, REFRESH_INTERVAL_MS);
-    console.log(`\n🚀 Interview Panel Tracker running on http://localhost:${PORT}\n`);
+  // Background refresh starts after init
+  setInterval(async () => {
+    try {
+      await refreshData();
+      process.stdout.write('.'); // heartbeat
+    } catch (e) {
+      console.error('\nBackground refresh failed:', e.message);
+    }
+  }, REFRESH_INTERVAL_MS);
+  console.log(`\n🚀 Interview Panel Tracker running on http://localhost:${PORT}\n`);
 });

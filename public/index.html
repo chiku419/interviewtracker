@@ -1,63 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interview Panel Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    html, body {
+    html,
+    body {
       height: 100%;
       margin: 0;
       background: #f9fafb;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
+
     .fade-in {
       animation: fadeIn 0.3s ease-in-out;
     }
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
+
     @keyframes updateBlink {
-      0%, 100% { background-color: inherit; box-shadow: inherit; }
-      50% { background-color: rgba(34, 197, 94, 0.1); box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+
+      0%,
+      100% {
+        background-color: inherit;
+        box-shadow: inherit;
+      }
+
+      50% {
+        background-color: rgba(34, 197, 94, 0.1);
+        box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+      }
     }
+
     @keyframes cardFlash {
-      0%, 100% { background-color: inherit; box-shadow: inherit; }
-      25%, 75% { background-color: rgba(34, 197, 94, 0.2); box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), inset 0 0 30px rgba(34, 197, 94, 0.2); }
-      50% { background-color: rgba(34, 197, 94, 0.3); box-shadow: 0 0 50px rgba(34, 197, 94, 1), inset 0 0 40px rgba(34, 197, 94, 0.3); }
+
+      0%,
+      100% {
+        background-color: inherit;
+        box-shadow: inherit;
+      }
+
+      25%,
+      75% {
+        background-color: rgba(34, 197, 94, 0.2);
+        box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), inset 0 0 30px rgba(34, 197, 94, 0.2);
+      }
+
+      50% {
+        background-color: rgba(34, 197, 94, 0.3);
+        box-shadow: 0 0 50px rgba(34, 197, 94, 1), inset 0 0 40px rgba(34, 197, 94, 0.3);
+      }
     }
+
     .item-updated {
       animation: updateBlink 0.6s ease-in-out 17;
       border-left: 4px solid #22c55e;
     }
+
     .card-updated {
       animation: cardFlash 1.2s ease-in-out 8;
     }
   </style>
 </head>
+
 <body class="bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 text-gray-800 flex flex-col min-h-screen">
   <!-- Sticky Header -->
-  <div class="sticky top-0 z-50 bg-gradient-to-b from-white via-white/95 to-white/90 backdrop-blur-lg border-b border-gray-200/60 shadow-md">
+  <div
+    class="sticky top-0 z-50 bg-gradient-to-b from-white via-white/95 to-white/90 backdrop-blur-lg border-b border-gray-200/60 shadow-md">
     <div class="max-w-full px-3 py-2">
       <!-- Process Flow and Logo Row -->
       <div class="flex items-center justify-between gap-3">
         <!-- Process Flow Section -->
-        <div class="flex-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-lg p-3 border border-blue-500/30 shadow-lg">
+        <div
+          class="flex-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-lg p-3 border border-blue-500/30 shadow-lg">
           <p class="text-xs font-bold text-white mb-2 flex items-center gap-1">
-            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-blue-600 text-xs font-bold">📋</span>
+            <span
+              class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white text-blue-600 text-xs font-bold">📋</span>
             INTERVIEW PROCESS FLOW
           </p>
           <div id="processFlowDisplay" class="flex items-center gap-2 flex-wrap"></div>
         </div>
-        
+
         <!-- Logo -->
         <div class="flex items-center gap-3 flex-shrink-0">
-          <img src="/logo.jpeg" alt="DoMS IIT Roorkee" class="block h-13 md:h-14 w-auto max-w-[160px] rounded-lg shadow-lg object-contain bg-white p-1 border border-gray-100" />
+          <img src="/logo.jpeg" alt="DoMS IIT Roorkee"
+            class="block h-13 md:h-14 w-auto max-w-[160px] rounded-lg shadow-lg object-contain bg-white p-1 border border-gray-100" />
+          <img id="headerCompanyLogo" src="" alt="Company Logo" style="display: none;"
+            class="block h-13 md:h-14 w-auto max-w-[160px] rounded-lg shadow-lg object-contain bg-white p-1 border border-gray-100" />
         </div>
       </div>
-      
+
       <!-- Controls / Toolbar -->
       <div id="controls" class="fade-in mt-1"></div>
     </div>
@@ -72,8 +117,8 @@
         <p class="mt-6 text-gray-600 font-medium text-lg">Loading interview data...</p>
       </div>
 
-  <!-- Main Content -->
-  <div id="container" class="fade-in"></div>
+      <!-- Main Content -->
+      <div id="container" class="fade-in"></div>
     </div>
   </div>
 
@@ -81,7 +126,7 @@
     const loadingDiv = document.getElementById('loading');
     const containerDiv = document.getElementById('container');
     const controlsDiv = document.getElementById('controls');
-  // Summary removed
+    // Summary removed
 
     const uiFilters = {
       statuses: new Set(['ongoing', 'beready'])
@@ -95,7 +140,8 @@
     let previousDataState = {};
     let maxPanelsToDisplay = 3;
     let panelStatuses = {}; // Store panel live/break status
-    let round2Enabled = false; // Track if Round 2 is enabled
+    let round2Enabled = false;
+    let round1Enabled = true; // Default: enabled // Track if Round 2 is enabled
     let processFlow = []; // Store the interview process flow
 
     function getStatusBadgeClass(status) {
@@ -128,7 +174,7 @@
     function updateGridLayout(panelCount) {
       const grid = containerDiv.querySelector('[data-grid]');
       if (!grid) return;
-      
+
       // Dynamically adjust grid columns to fill width without gaps
       if (panelCount === 1) {
         grid.style.gridTemplateColumns = '1fr';
@@ -166,10 +212,18 @@
       const li = document.createElement('li');
       li.className = 'flex items-center justify-between gap-2 p-2.5 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-lg hover:from-blue-50 hover:to-indigo-50/50 transition-all hover:shadow-md group';
       li.dataset.itemId = item.Email; // Track by email for change detection
-      
+
       li.innerHTML = `
         <div class="min-w-0 flex items-center gap-2 flex-1">
-          <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGradient(item.Email)} text-white text-xs font-bold shadow-md flex-shrink-0" title="${item.Email}">${getInitials(item.Email)}</span>
+          ${item.Lin && item.Lin.trim() !== ''
+          ? `<img src="${item.Lin.trim().toLowerCase() === 'm' ? 'm.jpg' : item.Lin.trim().toLowerCase() === 'f' ? 'f.avif' : ''}" 
+                      alt="${item.name}"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                      class="inline-flex h-8 w-8 rounded-full object-cover object-center shadow-md flex-shrink-0" 
+                      title="${item.Email}" />
+                 <span class="hidden inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGradient(item.Email)} text-white text-xs font-bold shadow-md flex-shrink-0" title="${item.Email}">${getInitials(item.Email)}</span>`
+          : `<span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br ${getAvatarGradient(item.Email)} text-white text-xs font-bold shadow-md flex-shrink-0" title="${item.Email}">${getInitials(item.Email)}</span>`
+        }
           <p class="text-sm font-medium text-gray-800 truncate group-hover:text-blue-900" title="${item.name}">${item.name}</p>
         </div>
         <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadgeClass(item.displayStatus)} shadow-sm">${item.displayStatus}</span>
@@ -178,12 +232,12 @@
     }
 
     function renderCards(panelData) {
-      // Limit panels based on admin setting
-      const panelsToShow = panelData.slice(0, maxPanelsToDisplay);
-      
+      // Defensive: ensure panelData is an array (server may return undefined on error)
+      const panelsToShow = Array.isArray(panelData) ? panelData.slice(0, maxPanelsToDisplay) : [];
+
       // Clear container and create structure
       containerDiv.innerHTML = '';
-      
+
       // Create grid for Round 1 panels
       const grid = document.createElement('div');
       grid.dataset.grid = 'true';
@@ -202,13 +256,18 @@
         if (!nextKeys.has(key)) el.remove();
       }
 
-      for (const panelGroup of panelsToShow) {
-        let card = existingCards.get(panelGroup.panel);
-        if (!card) {
-          card = document.createElement('div');
-          card.dataset.panelKey = panelGroup.panel;
-          card.className = 'rounded-2xl border border-gray-200/60 bg-white shadow-md hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 overflow-hidden group';
-          card.innerHTML = `
+      // Only render Round 1 cards if enabled
+      if (round1Enabled) {
+        for (const panelGroup of panelsToShow) {
+          // Defensive: ensure items is always an array to avoid runtime errors
+          const items = Array.isArray(panelGroup && panelGroup.items) ? panelGroup.items : [];
+
+          let card = existingCards.get(panelGroup.panel);
+          if (!card) {
+            card = document.createElement('div');
+            card.dataset.panelKey = panelGroup.panel;
+            card.className = 'rounded-2xl border border-gray-200/60 bg-white shadow-md hover:shadow-2xl hover:border-blue-300/50 transition-all duration-300 overflow-hidden group';
+            card.innerHTML = `
             <div class="flex items-start justify-between px-4 py-3 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-50 border-b border-gray-100/80">
               <div class="flex-1">
                 <h3 class="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors" data-title></h3>
@@ -219,128 +278,128 @@
             </div>
             <div class="px-4 py-3" data-body></div>
           `;
-          grid.appendChild(card);
-        }
-
-        // Update panel status badge
-        const panelStatus = panelStatuses[panelGroup.panel] || 'live';
-        const statusBadge = card.querySelector('[data-status-badge]');
-        if (statusBadge) {
-          if (panelStatus === 'live') {
-            statusBadge.innerHTML = '<span class="h-2.5 w-2.5 rounded-full bg-green-500 inline-block"></span>Live';
-            statusBadge.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 transition-all duration-200';
-          } else {
-            statusBadge.innerHTML = '<span class="h-2.5 w-2.5 rounded-full bg-red-500 inline-block"></span>Break';
-            statusBadge.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition-all duration-200';
+            grid.appendChild(card);
           }
-        }
 
-        // Check if any item in this panel has been updated
-        let panelHasUpdate = false;
-        for (const item of panelGroup.items) {
-          const itemKey = `${panelGroup.panel}-${item.Email}`;
-          const prevState = previousDataState[itemKey];
-          const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
-          if (prevState && prevState !== currentState) {
-            panelHasUpdate = true;
-            break;
+          // Update panel status badge
+          const panelStatus = panelStatuses[panelGroup.panel] || 'live';
+          const statusBadge = card.querySelector('[data-status-badge]');
+          if (statusBadge) {
+            if (panelStatus === 'live') {
+              statusBadge.innerHTML = '<span class="h-2.5 w-2.5 rounded-full bg-green-500 inline-block"></span>Live';
+              statusBadge.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-green-700 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200 transition-all duration-200';
+            } else {
+              statusBadge.innerHTML = '<span class="h-2.5 w-2.5 rounded-full bg-red-500 inline-block"></span>Break';
+              statusBadge.className = 'inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition-all duration-200';
+            }
           }
-        }
 
-        // Apply card flash animation if there's an update
-        if (panelHasUpdate) {
-          card.classList.add('card-updated');
-          setTimeout(() => card.classList.remove('card-updated'), 9600); // Remove after animation (8 cycles × 1.2s)
-        }
-
-        // Update header
-        card.querySelector('[data-title]').textContent = panelGroup.panel;
-
-        // Update body list with minimal DOM churn
-        const body = card.querySelector('[data-body]');
-        const list = document.createElement('ul');
-        list.className = 'space-y-2';
-
-        const MAX_VISIBLE = 6;
-        const visibleItems = panelGroup.items.slice(0, MAX_VISIBLE);
-        const remaining = panelGroup.items.length - MAX_VISIBLE;
-        for (const item of visibleItems) {
-          const li = buildListItem(item);
-          
-          // Check if this item has been updated
-          const itemKey = `${panelGroup.panel}-${item.Email}`;
-          const prevState = previousDataState[itemKey];
-          const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
-          
-          if (prevState && prevState !== currentState) {
-            // Item has changed, apply blink animation
-            li.classList.add('item-updated');
-            setTimeout(() => li.classList.remove('item-updated'), 10200); // Remove after animation (17 cycles × 0.6s)
+          // Check if any item in this panel has been updated
+          let panelHasUpdate = false;
+          for (const item of items) {
+            const itemKey = `${panelGroup.panel}-${item.Email}`;
+            const prevState = previousDataState[itemKey];
+            const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
+            if (prevState && prevState !== currentState) {
+              panelHasUpdate = true;
+              break;
+            }
           }
-          
-          // Update state for next comparison
-          previousDataState[itemKey] = currentState;
-          
-          list.appendChild(li);
-        }
 
-        body.innerHTML = '';
-        body.appendChild(list);
+          // Apply card flash animation if there's an update
+          if (panelHasUpdate) {
+            card.classList.add('card-updated');
+            setTimeout(() => card.classList.remove('card-updated'), 9600); // Remove after animation (8 cycles × 1.2s)
+          }
 
-        // All interviews over message - show if no items and allOver is true
-        if (panelGroup.items.length === 0 && panelGroup.allOver) {
-          const note = document.createElement('div');
-          note.className = 'py-8 text-center';
-          note.innerHTML = `
-            <div class="text-4xl mb-3">✅</div>
-            <p class="text-sm font-medium text-gray-700">All interviews for this panel are now over.</p>
-          `;
-          body.appendChild(note);
-        } else if (remaining > 0) {
-          const hiddenContainer = document.createElement('div');
-          hiddenContainer.className = 'hidden space-y-2 mt-2';
-          for (let i = MAX_VISIBLE; i < panelGroup.items.length; i++) {
-            const item = panelGroup.items[i];
+          // Update header
+          card.querySelector('[data-title]').textContent = panelGroup.panel;
+
+          // Update body list with minimal DOM churn
+          const body = card.querySelector('[data-body]');
+          const list = document.createElement('ul');
+          list.className = 'space-y-2';
+
+          const MAX_VISIBLE = 6;
+          const visibleItems = items.slice(0, MAX_VISIBLE);
+          const remaining = Math.max(0, items.length - MAX_VISIBLE);
+          for (const item of visibleItems) {
             const li = buildListItem(item);
-            
+
             // Check if this item has been updated
             const itemKey = `${panelGroup.panel}-${item.Email}`;
             const prevState = previousDataState[itemKey];
             const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
-            
-            if (prevState && prevState !== currentState) {
-              li.classList.add('item-updated');
-              setTimeout(() => li.classList.remove('item-updated'), 10200);
-            }
-            
-            previousDataState[itemKey] = currentState;
-            hiddenContainer.appendChild(li);
-          }
-          const toggleBtn = document.createElement('button');
-          toggleBtn.type = 'button';
-          toggleBtn.className = 'mt-3 text-sm font-medium text-blue-600 hover:text-blue-700';
-          toggleBtn.textContent = `Show ${remaining} more`;
-          let expanded = false;
-          toggleBtn.addEventListener('click', () => {
-            expanded = !expanded;
-            hiddenContainer.classList.toggle('hidden', !expanded);
-            toggleBtn.textContent = expanded ? 'Show less' : `Show ${remaining} more`;
-          });
-          body.appendChild(toggleBtn);
-          body.appendChild(hiddenContainer);
-        }
-      }
 
-      // Add Round 2 section if enabled and data exists
-      if (round2Enabled && allData.round2 && allData.round2.length > 0) {
-        // Create separate container for Round 2 section
-        const round2Container = document.createElement('div');
-        round2Container.className = 'mt-4';
-        
-        // Round 2 heading
-        const heading = document.createElement('div');
-        heading.className = 'mb-3';
-        heading.innerHTML = `
+            if (prevState && prevState !== currentState) {
+              // Item has changed, apply blink animation
+              li.classList.add('item-updated');
+              setTimeout(() => li.classList.remove('item-updated'), 10200); // Remove after animation (17 cycles × 0.6s)
+            }
+
+            // Update state for next comparison
+            previousDataState[itemKey] = currentState;
+
+            list.appendChild(li);
+          }
+
+          body.innerHTML = '';
+          body.appendChild(list);
+
+          // All interviews over message - show if no items and allOver is true
+          if (items.length === 0 && panelGroup.allOver) {
+            const note = document.createElement('div');
+            note.className = 'py-8 text-center';
+            note.innerHTML = `
+            <div class="text-4xl mb-3">✅</div>
+            <p class="text-sm font-medium text-gray-700">All interviews for this panel are now over.</p>
+          `;
+            body.appendChild(note);
+          } else if (remaining > 0) {
+            const hiddenContainer = document.createElement('div');
+            hiddenContainer.className = 'hidden space-y-2 mt-2';
+            for (let i = MAX_VISIBLE; i < items.length; i++) {
+              const item = items[i];
+              const li = buildListItem(item);
+
+              // Check if this item has been updated
+              const itemKey = `${panelGroup.panel}-${item.Email}`;
+              const prevState = previousDataState[itemKey];
+              const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
+
+              if (prevState && prevState !== currentState) {
+                li.classList.add('item-updated');
+                setTimeout(() => li.classList.remove('item-updated'), 10200);
+              }
+
+              previousDataState[itemKey] = currentState;
+              hiddenContainer.appendChild(li);
+            }
+            const toggleBtn = document.createElement('button');
+            toggleBtn.type = 'button';
+            toggleBtn.className = 'mt-3 text-sm font-medium text-blue-600 hover:text-blue-700';
+            toggleBtn.textContent = `Show ${remaining} more`;
+            let expanded = false;
+            toggleBtn.addEventListener('click', () => {
+              expanded = !expanded;
+              hiddenContainer.classList.toggle('hidden', !expanded);
+              toggleBtn.textContent = expanded ? 'Show less' : `Show ${remaining} more`;
+            });
+            body.appendChild(toggleBtn);
+            body.appendChild(hiddenContainer);
+          }
+        }
+
+        // Add Round 2 section if enabled and data exists
+        if (round2Enabled && Array.isArray(allData.round2) && allData.round2.length > 0) {
+          // Create separate container for Round 2 section
+          const round2Container = document.createElement('div');
+          round2Container.className = 'mt-4';
+
+          // Round 2 heading
+          const heading = document.createElement('div');
+          heading.className = 'mb-3';
+          heading.innerHTML = `
           <div class="flex items-center gap-3">
             <h2 class="text-lg font-bold text-emerald-900 bg-gradient-to-r from-emerald-100 to-teal-100 px-3.5 py-1.5 rounded-lg">Round 2 Candidates</h2>
             <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-black text-xs font-bold animate-pulse border border-emerald-300">
@@ -348,34 +407,34 @@
             </span>
           </div>
         `;
-        round2Container.appendChild(heading);
-        
-        // Create grid for Round 2 cards
-        const round2Grid = document.createElement('div');
-        round2Grid.className = 'grid gap-3 w-full';
-        // Set Round 2 grid columns based on panel count
-        let round2PanelCount = allData.round2.length;
-        if (round2PanelCount === 1) {
-          round2Grid.style.gridTemplateColumns = '1fr';
-        } else if (round2PanelCount === 2) {
-          round2Grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-        } else if (round2PanelCount >= 3) {
-          round2Grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-        }
-        
-        // Render Round 2 cards
-        allData.round2.forEach(panelGroup => {
-          if (!panelGroup.items || panelGroup.items.length === 0) return;
-          
-          const panelName = panelGroup.panel;
-          const candidates = panelGroup.items;
-          
-          const card = document.createElement('div');
-          card.className = 'rounded-2xl border border-emerald-200/60 bg-white shadow-md hover:shadow-2xl hover:border-emerald-300/50 transition-all duration-300 overflow-hidden group';
-          
-          const header = document.createElement('div');
-          header.className = 'flex items-start justify-between px-4 py-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 border-b border-emerald-100/80';
-          header.innerHTML = `
+          round2Container.appendChild(heading);
+
+          // Create grid for Round 2 cards
+          const round2Grid = document.createElement('div');
+          round2Grid.className = 'grid gap-3 w-full';
+          // Set Round 2 grid columns based on panel count
+          let round2PanelCount = allData.round2.length;
+          if (round2PanelCount === 1) {
+            round2Grid.style.gridTemplateColumns = '1fr';
+          } else if (round2PanelCount === 2) {
+            round2Grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+          } else if (round2PanelCount >= 3) {
+            round2Grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+          }
+
+          // Render Round 2 cards
+          allData.round2.forEach(panelGroup => {
+            const candidates = Array.isArray(panelGroup && panelGroup.items) ? panelGroup.items : [];
+            if (candidates.length === 0) return;
+
+            const panelName = panelGroup.panel || 'Unknown Panel';
+
+            const card = document.createElement('div');
+            card.className = 'rounded-2xl border border-emerald-200/60 bg-white shadow-md hover:shadow-2xl hover:border-emerald-300/50 transition-all duration-300 overflow-hidden group';
+
+            const header = document.createElement('div');
+            header.className = 'flex items-start justify-between px-4 py-3 bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 border-b border-emerald-100/80';
+            header.innerHTML = `
             <div class="flex-1">
               <h3 class="text-lg font-bold text-emerald-900 group-hover:text-emerald-700 transition-colors">${panelName}</h3>
             </div>
@@ -385,309 +444,371 @@
               </span>
             </div>
           `;
-          
-          const body = document.createElement('div');
-          body.className = 'px-4 py-3';
-          
-          const list = document.createElement('ul');
-          list.className = 'space-y-2';
-          
-          // Filter candidates based on status (On-Going and Be Ready)
-          const ongoingCandidates = candidates.filter(c => normalizeStatus(c['Status']) === 'ongoing');
-          const beReadyCandidates = candidates.filter(c => normalizeStatus(c['Status']) !== 'ongoing' && c.showAsBeReady);
-          
-          const displayCandidates = [...ongoingCandidates, ...beReadyCandidates];
-          
-          displayCandidates.forEach(candidate => {
-            const li = document.createElement('li');
-            li.className = 'flex items-center justify-between gap-2 p-2.5 bg-gradient-to-r from-emerald-50 to-teal-50/50 rounded-lg hover:from-emerald-100 hover:to-teal-100/50 transition-all hover:shadow-md group';
-            
-            const candidateName = candidate.Name || getNameFromEmail(candidate.Email || '');
-            const candidateEmail = candidate.Email || '';
-            const statusDisplay = candidate.displayStatus || candidate['Status'] || 'Pending';
-            
-            li.innerHTML = `
+
+            const body = document.createElement('div');
+            body.className = 'px-4 py-3';
+
+            const list = document.createElement('ul');
+            list.className = 'space-y-2';
+
+            // Filter candidates based on status (On-Going and Be Ready)
+            const ongoingCandidates = candidates.filter(c => normalizeStatus(c && c['Status']) === 'ongoing');
+            const beReadyCandidates = candidates.filter(c => normalizeStatus(c && c['Status']) !== 'ongoing' && c.showAsBeReady);
+
+            const displayCandidates = [...ongoingCandidates, ...beReadyCandidates];
+
+            displayCandidates.forEach(candidate => {
+              const li = document.createElement('li');
+              li.className = 'flex items-center justify-between gap-2 p-2.5 bg-gradient-to-r from-emerald-50 to-teal-50/50 rounded-lg hover:from-emerald-100 hover:to-teal-100/50 transition-all hover:shadow-md group';
+
+              const candidateName = candidate.Name || getNameFromEmail(candidate.Email || '');
+              const candidateEmail = candidate.Email || '';
+              const statusDisplay = candidate.displayStatus || candidate['Status'] || 'Pending';
+
+              li.innerHTML = `
               <div class="min-w-0 flex items-center gap-2 flex-1">
                 <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold shadow-md flex-shrink-0" title="${candidateEmail}">${getInitials(candidateEmail)}</span>
                 <p class="text-sm font-medium text-emerald-900 truncate group-hover:text-emerald-700 transition-colors" title="${candidateName}">${candidateName}</p>
               </div>
               <span class="shrink-0 px-2.5 py-1 rounded-full text-xs font-bold ${getStatusBadgeClass(statusDisplay)} shadow-sm">${statusDisplay}</span>
             `;
-            list.appendChild(li);
+              list.appendChild(li);
+            });
+
+            body.appendChild(list);
+            card.appendChild(header);
+            card.appendChild(body);
+            round2Grid.appendChild(card);
           });
-          
-          body.appendChild(list);
-          card.appendChild(header);
-          card.appendChild(body);
-          round2Grid.appendChild(card);
-        });
-        
-        round2Container.appendChild(round2Grid);
-        containerDiv.appendChild(round2Container);
+
+          round2Container.appendChild(round2Grid);
+          containerDiv.appendChild(round2Container);
+        }
+
+        // Update grid layout based on visible Round 1 panels only (excluding heading and Round 2 cards)
+        const visibleRound1Panels = panelsToShow.length;
+        updateGridLayout(visibleRound1Panels);
+
+        // Show "no items" message only if there are no Round 1 items AND no Round 2 items
+        if ((panelData.length === 0 || !round1Enabled) && (!round2Enabled || !allData.round2 || allData.round2.length === 0)) {
+          containerDiv.innerHTML = '<div class="col-span-full text-center py-16"><p class="text-gray-500 text-lg">No On-Going items to show.</p></div>';
+        }
       }
 
-      // Update grid layout based on visible Round 1 panels only (excluding heading and Round 2 cards)
-      const visibleRound1Panels = panelsToShow.length;
-      updateGridLayout(visibleRound1Panels);
-
-      // Show "no items" message only if there are no Round 1 items AND no Round 2 items
-      if (panelData.length === 0 && (!round2Enabled || !allData.round2 || allData.round2.length === 0)) {
-        containerDiv.innerHTML = '<div class="col-span-full text-center py-16"><p class="text-gray-500 text-lg">No On-Going items to show.</p></div>';
-      }
-    }
-
-    function normalizeStatus(status) {
-      if (!status) return '';
-      return String(status)
-        .toLowerCase()
-        .trim()
-        .replace(/\s/g, '')
-        .replace(/-/g, '');
-    }
-
-    // Load max panels setting from server
-    async function loadDisplaySettings() {
-      try {
-        const response = await fetch('/api/max-panels');
-        const result = await response.json();
-        maxPanelsToDisplay = result.maxPanels || 3;
-      } catch (error) {
-        console.error('Failed to load display settings:', error);
-        maxPanelsToDisplay = 3;
-      }
-    }
-
-    // Summary UI removed
-
-    function renderControls() {
-      controlsDiv.innerHTML = '';
-      const bar = document.createElement('div');
-      bar.className = 'flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl p-4 border border-blue-100/50 backdrop-blur-sm mt-3';
-
-      const left = document.createElement('div');
-      left.className = 'flex items-center gap-3';
-      const roundLabel = document.createElement('span');
-      roundLabel.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md';
-      roundLabel.innerHTML = `<span class="text-lg">①</span>Round 1`;
-      left.appendChild(roundLabel);
-      
-      // Add Round 2 indicator if enabled
-      if (round2Enabled) {
-        const round2Label = document.createElement('span');
-        round2Label.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm shadow-md animate-pulse';
-        round2Label.innerHTML = `<span class="text-lg animate-bounce">🔔</span>Round 2 Results Declared`;
-        left.appendChild(round2Label);
+      function normalizeStatus(status) {
+        if (!status) return '';
+        return String(status)
+          .toLowerCase()
+          .trim()
+          .replace(/\s/g, '')
+          .replace(/-/g, '');
       }
 
-      const right = document.createElement('div');
-      right.className = 'flex items-center gap-2 flex-wrap';
+      // Load max panels setting from server
+      async function loadDisplaySettings() {
+        try {
+          const response = await fetch('/api/max-panels');
+          const result = await response.json();
+          maxPanelsToDisplay = result.maxPanels || 3;
+        } catch (error) {
+          console.error('Failed to load display settings:', error);
+          maxPanelsToDisplay = 3;
+        }
+      }
 
-      const statusBtn = (key, label, colorClasses) => {
-        const active = uiFilters.statuses.has(key);
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200 ${active ? colorClasses.active : colorClasses.inactive}`;
-        btn.innerHTML = `<span class="inline-block h-2.5 w-2.5 rounded-full ${colorClasses.dot} mr-2"></span>${label}`;
-        btn.addEventListener('click', () => {
-          if (uiFilters.statuses.has(key)) {
-            uiFilters.statuses.delete(key);
-          } else {
-            uiFilters.statuses.add(key);
-          }
-          // Update button appearance immediately
-          const isNowActive = uiFilters.statuses.has(key);
-          btn.className = `px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200 ${isNowActive ? colorClasses.active : colorClasses.inactive}`;
-          fetchData();
-        });
-        return btn;
-      };
+      // Summary UI removed
 
-      right.appendChild(statusBtn('ongoing', 'On-Going', {
-        active: 'border-amber-400 bg-amber-200 text-amber-950 shadow-lg scale-105',
-        inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-        dot: 'bg-amber-600'
-      }));
-      right.appendChild(statusBtn('beready', 'Be Ready', {
-        active: 'border-blue-400 bg-blue-200 text-blue-950 shadow-lg scale-105',
-        inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-        dot: 'bg-blue-600'
-      }));
-      right.appendChild(statusBtn('pending', 'Pending', {
-        active: 'border-slate-400 bg-slate-200 text-slate-950 shadow-lg scale-105',
-        inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
-        dot: 'bg-slate-600'
-      }));
+      function renderControls() {
+        controlsDiv.innerHTML = '';
+        const bar = document.createElement('div');
+        bar.className = 'flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 rounded-xl p-4 border border-blue-100/50 backdrop-blur-sm mt-3';
 
-      bar.appendChild(left);
-      bar.appendChild(right);
-      controlsDiv.appendChild(bar);
-    }
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-3';
+        const roundLabel = document.createElement('span');
+        roundLabel.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-sm shadow-md';
+        roundLabel.innerHTML = `<span class="text-lg">①</span>Round 2`;
+        left.appendChild(roundLabel);
 
-    let pollTimer = null;
-    let settingsTimer = null;
+        // Add Round 2 indicator if enabled
+        if (round2Enabled) {
+          const round2Label = document.createElement('span');
+          round2Label.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm shadow-md animate-pulse';
+          round2Label.innerHTML = `<span class="text-lg animate-bounce">🔔</span>Round 2 Results Declared`;
+          left.appendChild(round2Label);
+        }
 
-    async function fetchData() {
-      try {
-        loadingDiv.style.display = 'none';
-        const statuses = Array.from(uiFilters.statuses).join(',');
-        const response = await fetch(`/api/data?statuses=${statuses}&round=round1`);
-        const result = await response.json();
+        // Center: Welcome Message
+        const center = document.createElement('div');
+        center.className = 'hidden md:block flex-1 text-center px-4';
+        center.innerHTML = `<span class="text-gray-700 font-bold text-lg">Welcome to the Recruitment Process for <span class="text-blue-600">${currentCompanyName}</span></span>`;
 
-        if (result.success) {
-          // Fetch Round 2 data as well if enabled
-          if (round2Enabled) {
-            try {
-              const round2Response = await fetch('/api/data?round=round2');
-              const round2Result = await round2Response.json();
-              if (round2Result.success) {
-                allData.round2 = round2Result.data || [];
+        const right = document.createElement('div');
+        right.className = 'flex items-center gap-2 flex-wrap';
+
+        const statusBtn = (key, label, colorClasses) => {
+          const active = uiFilters.statuses.has(key);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200 ${active ? colorClasses.active : colorClasses.inactive}`;
+          btn.innerHTML = `<span class="inline-block h-2.5 w-2.5 rounded-full ${colorClasses.dot} mr-2"></span>${label}`;
+          btn.addEventListener('click', () => {
+            if (uiFilters.statuses.has(key)) {
+              uiFilters.statuses.delete(key);
+            } else {
+              uiFilters.statuses.add(key);
+            }
+            // Update button appearance immediately
+            const isNowActive = uiFilters.statuses.has(key);
+            btn.className = `px-4 py-2 rounded-lg text-sm font-bold border transition-all duration-200 ${isNowActive ? colorClasses.active : colorClasses.inactive}`;
+            fetchData();
+          });
+          return btn;
+        };
+
+        right.appendChild(statusBtn('ongoing', 'On-Going', {
+          active: 'border-amber-400 bg-amber-200 text-amber-950 shadow-lg scale-105',
+          inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+          dot: 'bg-amber-600'
+        }));
+        right.appendChild(statusBtn('beready', 'Be Ready', {
+          active: 'border-blue-400 bg-blue-200 text-blue-950 shadow-lg scale-105',
+          inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+          dot: 'bg-blue-600'
+        }));
+        right.appendChild(statusBtn('pending', 'Pending', {
+          active: 'border-slate-400 bg-slate-200 text-slate-950 shadow-lg scale-105',
+          inactive: 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50',
+          dot: 'bg-slate-600'
+        }));
+
+        bar.appendChild(left);
+        bar.appendChild(center);
+        bar.appendChild(right);
+        controlsDiv.appendChild(bar);
+      }
+
+      let pollTimer = null;
+      let settingsTimer = null;
+
+      async function fetchData() {
+        try {
+          loadingDiv.style.display = 'none';
+          const statuses = Array.from(uiFilters.statuses).join(',');
+          const response = await fetch(`/api/data?statuses=${statuses}&round=round1`);
+          const result = await response.json();
+
+          if (result.success) {
+            // Fetch Round 2 data as well if enabled
+            if (round2Enabled) {
+              try {
+                const round2Response = await fetch('/api/data?round=round2');
+                const round2Result = await round2Response.json();
+                if (round2Result.success) {
+                  allData.round2 = round2Result.data || [];
+                }
+              } catch (error) {
+                console.error('Failed to fetch Round 2 data:', error);
+                allData.round2 = [];
               }
-            } catch (error) {
-              console.error('Failed to fetch Round 2 data:', error);
-              allData.round2 = [];
+            }
+            renderCards(result.data);
+          } else {
+            containerDiv.innerHTML = `<p class="text-red-600">Error: ${result.error}</p>`;
+          }
+        } catch (error) {
+          containerDiv.innerHTML = `<p class="text-red-600">Failed to load data: ${error.message}</p>`;
+        }
+      }
+
+      async function checkDisplaySettings() {
+        try {
+          const response = await fetch('/api/max-panels');
+          const data = await response.json();
+          if (data.maxPanels && data.maxPanels !== maxPanelsToDisplay) {
+            maxPanelsToDisplay = data.maxPanels;
+            // Re-render with new panel count
+            await fetchData();
+          }
+        } catch (error) {
+          // silently fail for settings check
+        }
+      }
+
+      async function fetchPanelStatuses() {
+        try {
+          const response = await fetch('/api/panel-statuses');
+          const data = await response.json();
+          if (JSON.stringify(panelStatuses) !== JSON.stringify(data.statuses || {})) {
+            panelStatuses = data.statuses || {};
+            // Re-render to show updated status badges
+            const statuses = Array.from(uiFilters.statuses).join(',');
+            const dataResponse = await fetch(`/api/data?statuses=${statuses}&round=round1`);
+            const result = await dataResponse.json();
+            if (result.success) {
+              // renderCards will use maxPanelsToDisplay to slice
+              renderCards(result.data);
             }
           }
-          renderCards(result.data);
+        } catch (error) {
+          // silently fail for status check
+        }
+      }
+
+      async function checkRound2Status() {
+        try {
+          const response = await fetch('/api/round2-enabled');
+          const data = await response.json();
+          if (data.round2Enabled !== round2Enabled) {
+            round2Enabled = data.round2Enabled;
+            // Re-render controls to show/hide Round 2 indicator
+            renderControls();
+            // Re-fetch data to show/hide Round 2 section
+            await fetchData();
+          }
+        } catch (error) {
+          // silently fail for Round 2 check
+        }
+      }
+
+      async function checkRound1Status() {
+        try {
+          const response = await fetch('/api/round1-enabled');
+          const data = await response.json();
+          if (data.round1Enabled !== round1Enabled) {
+            round1Enabled = data.round1Enabled;
+            // Re-render controls
+            renderControls();
+            // Re-fetch data to show/hide Round 1 section
+            await fetchData();
+          }
+        } catch (error) {
+          // silently fail for Round 1 check
+        }
+      }
+
+      async function fetchProcessFlow() {
+        try {
+          const response = await fetch('/api/process-flow');
+          const data = await response.json();
+          if (JSON.stringify(processFlow) !== JSON.stringify(data.processFlow || [])) {
+            processFlow = data.processFlow || [];
+            renderProcessFlow();
+          }
+        } catch (error) {
+          // silently fail for process flow check
+        }
+      }
+
+      function renderProcessFlow() {
+        const flowDisplay = document.getElementById('processFlowDisplay');
+        flowDisplay.innerHTML = '';
+
+        if (processFlow && processFlow.length > 0) {
+          const container = document.createElement('div');
+          container.className = 'flex items-center gap-2 flex-wrap';
+
+          processFlow.forEach((step, index) => {
+            // Step badge
+            const stepDiv = document.createElement('div');
+            stepDiv.className = 'flex items-center gap-2';
+
+            // Number circle
+            const numberCircle = document.createElement('div');
+            numberCircle.className = 'flex items-center justify-center w-6 h-6 rounded-full bg-white text-blue-600 text-xs font-bold shadow-lg';
+            numberCircle.textContent = index + 1;
+
+            // Step label
+            const stepSpan = document.createElement('span');
+            stepSpan.className = 'px-3 py-1.5 rounded-full bg-white/20 text-white font-semibold text-sm whitespace-nowrap hover:bg-white/30 transition-colors duration-200 border border-white/30';
+            stepSpan.textContent = step;
+
+            stepDiv.appendChild(numberCircle);
+            stepDiv.appendChild(stepSpan);
+            container.appendChild(stepDiv);
+
+            // Add arrow between steps
+            if (index < processFlow.length - 1) {
+              const arrow = document.createElement('div');
+              arrow.className = 'text-white font-bold text-lg animate-pulse';
+              arrow.innerHTML = '→';
+              container.appendChild(arrow);
+            }
+          });
+
+          flowDisplay.appendChild(container);
         } else {
-          containerDiv.innerHTML = `<p class="text-red-600">Error: ${result.error}</p>`;
+          // Show placeholder if no flow defined
+          const placeholder = document.createElement('p');
+          placeholder.className = 'text-sm text-gray-400 italic';
+          placeholder.textContent = 'No process flow defined yet';
+          flowDisplay.appendChild(placeholder);
         }
-      } catch (error) {
-        containerDiv.innerHTML = `<p class="text-red-600">Failed to load data: ${error.message}</p>`;
       }
-    }
 
-    async function checkDisplaySettings() {
-      try {
-        const response = await fetch('/api/max-panels');
-        const data = await response.json();
-        if (data.maxPanels && data.maxPanels !== maxPanelsToDisplay) {
-          maxPanelsToDisplay = data.maxPanels;
-          // Re-render with new panel count
-          await fetchData();
-        }
-      } catch (error) {
-        // silently fail for settings check
-      }
-    }
+      let currentCompanyLogoUrl = null;
+      let currentCompanyName = 'Company';
 
-    async function fetchPanelStatuses() {
-      try {
-        const response = await fetch('/api/panel-statuses');
-        const data = await response.json();
-        if (JSON.stringify(panelStatuses) !== JSON.stringify(data.statuses || {})) {
-          panelStatuses = data.statuses || {};
-          // Re-render to show updated status badges
-          const statuses = Array.from(uiFilters.statuses).join(',');
-          const dataResponse = await fetch(`/api/data?statuses=${statuses}&round=round1`);
-          const result = await dataResponse.json();
-          if (result.success) {
-            // renderCards will use maxPanelsToDisplay to slice
-            renderCards(result.data);
+      // Fetch logo and company name
+      async function fetchCompanySettings() {
+        try {
+          // Fetch Logo
+          const logoResponse = await fetch('/api/logo');
+          const logoResult = await logoResponse.json();
+          if (logoResult.logoUrl) {
+            currentCompanyLogoUrl = logoResult.logoUrl;
+            const headerLogo = document.getElementById('headerCompanyLogo');
+            if (headerLogo) {
+              headerLogo.src = logoResult.logoUrl;
+              headerLogo.style.display = 'block';
+            }
           }
-        }
-      } catch (error) {
-        // silently fail for status check
-      }
-    }
 
-    async function checkRound2Status() {
-      try {
-        const response = await fetch('/api/round2-enabled');
-        const data = await response.json();
-        if (data.round2Enabled !== round2Enabled) {
-          round2Enabled = data.round2Enabled;
-          // Re-render controls to show/hide Round 2 indicator
+          // Fetch Company Name
+          const nameResponse = await fetch('/api/company-name');
+          const nameResult = await nameResponse.json();
+          if (nameResult.companyName) {
+            currentCompanyName = nameResult.companyName;
+            // Re-render controls to show new name
+            if (document.getElementById('controls').children.length > 0) {
+              renderControls();
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch company settings:', error);
+        }
+      }
+
+      // Initialize
+      async function init() {
+        try {
+          await fetchCompanySettings(); // Fetch logo and name first
           renderControls();
+          await loadDisplaySettings();
+          await checkRound1Status();
+          await checkRound2Status();
+          await fetchProcessFlow();
+          await fetchPanelStatuses();
+          await fetchData();
+          // Polling for live updates (every 10 seconds)
+          pollTimer = setInterval(fetchData, 10000);
+          // Check for display settings changes every 3 seconds (faster than data polling)
+          settingsTimer = setInterval(checkDisplaySettings, 3000);
+          // Check for panel status changes every 2 seconds
+          setInterval(fetchPanelStatuses, 2000);
+          // Check for Round 1 status changes every 2 seconds
+          setInterval(checkRound1Status, 2000);
+          // Check for Round 2 status changes every 2 seconds
+          setInterval(checkRound2Status, 2000);
+          // Check for process flow changes every 3 seconds
+          setInterval(fetchProcessFlow, 3000);
+        } catch (error) {
+          loadingDiv.innerHTML = `<p class="text-red-600">Failed to initialize: ${error.message}</p>`;
         }
-      } catch (error) {
-        // silently fail for Round 2 check
       }
-    }
 
-    async function fetchProcessFlow() {
-      try {
-        const response = await fetch('/api/process-flow');
-        const data = await response.json();
-        if (JSON.stringify(processFlow) !== JSON.stringify(data.processFlow || [])) {
-          processFlow = data.processFlow || [];
-          renderProcessFlow();
-        }
-      } catch (error) {
-        // silently fail for process flow check
-      }
-    }
-
-    function renderProcessFlow() {
-      const flowDisplay = document.getElementById('processFlowDisplay');
-      flowDisplay.innerHTML = '';
-      
-      if (processFlow && processFlow.length > 0) {
-        const container = document.createElement('div');
-        container.className = 'flex items-center gap-2 flex-wrap';
-        
-        processFlow.forEach((step, index) => {
-          // Step badge
-          const stepDiv = document.createElement('div');
-          stepDiv.className = 'flex items-center gap-2';
-          
-          // Number circle
-          const numberCircle = document.createElement('div');
-          numberCircle.className = 'flex items-center justify-center w-6 h-6 rounded-full bg-white text-blue-600 text-xs font-bold shadow-lg';
-          numberCircle.textContent = index + 1;
-          
-          // Step label
-          const stepSpan = document.createElement('span');
-          stepSpan.className = 'px-3 py-1.5 rounded-full bg-white/20 text-white font-semibold text-sm whitespace-nowrap hover:bg-white/30 transition-colors duration-200 border border-white/30';
-          stepSpan.textContent = step;
-          
-          stepDiv.appendChild(numberCircle);
-          stepDiv.appendChild(stepSpan);
-          container.appendChild(stepDiv);
-          
-          // Add arrow between steps
-          if (index < processFlow.length - 1) {
-            const arrow = document.createElement('div');
-            arrow.className = 'text-white font-bold text-lg animate-pulse';
-            arrow.innerHTML = '→';
-            container.appendChild(arrow);
-          }
-        });
-        
-        flowDisplay.appendChild(container);
-      } else {
-        // Show placeholder if no flow defined
-        const placeholder = document.createElement('p');
-        placeholder.className = 'text-sm text-gray-400 italic';
-        placeholder.textContent = 'No process flow defined yet';
-        flowDisplay.appendChild(placeholder);
-      }
-    }
-
-    // Initialize
-    async function init() {
-      try {
-        renderControls();
-        await loadDisplaySettings();
-        await checkRound2Status();
-        await fetchProcessFlow();
-        await fetchPanelStatuses();
-        await fetchData();
-        // Polling for live updates (every 10 seconds)
-        pollTimer = setInterval(fetchData, 10000);
-        // Check for display settings changes every 3 seconds (faster than data polling)
-        settingsTimer = setInterval(checkDisplaySettings, 3000);
-        // Check for panel status changes every 2 seconds
-        setInterval(fetchPanelStatuses, 2000);
-        // Check for Round 2 status changes every 2 seconds
-        setInterval(checkRound2Status, 2000);
-        // Check for process flow changes every 3 seconds
-        setInterval(fetchProcessFlow, 3000);
-      } catch (error) {
-        loadingDiv.innerHTML = `<p class="text-red-600">Failed to initialize: ${error.message}</p>`;
-      }
-    }
-
-    init();
+      init();
   </script>
 </body>
+
 </html>

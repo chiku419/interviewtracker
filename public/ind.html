@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interview Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes updateBlink {
+
+            0%,
+            100% {
+                background-color: transparent;
+            }
+
+            50% {
+                background-color: rgba(34, 197, 94, 0.1);
+            }
+        }
+
+        @keyframes cardFlash {
+
+            0%,
+            100% {
+                box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+                border-color: rgb(226 232 240);
+            }
+
+            50% {
+                box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+                border-color: rgb(34, 197, 94);
+            }
+        }
+
+        .item-updated {
+            animation: updateBlink 1s ease-in-out 3;
+            position: relative;
+        }
+
+        .item-updated::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: #22c55e;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .card-updated {
+            animation: cardFlash 1.5s ease-in-out 3;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-[#f8fafc] text-slate-800 flex flex-col min-h-screen selection:bg-blue-100 selection:text-blue-900 font-sans antialiased">
+    <!-- Subtle Background -->
+    <div class="fixed inset-0 -z-10 h-full w-full bg-[#f8fafc]">
+        <div
+            class="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-[0.6]">
+        </div>
+    </div>
+
+    <!-- Sticky Header -->
+    <div class="sticky top-0 z-50 transition-all duration-300">
+        <div
+            class="absolute inset-0 bg-white/90 backdrop-blur-md border-b border-slate-200/60 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.02)]">
+        </div>
+        <div class="max-w-full px-6 py-3 relative">
+            <!-- Process Flow and Logo Row -->
+            <div class="flex items-center justify-between gap-6">
+                <!-- Process Flow Section -->
+                <div
+                    class="flex-1 bg-slate-50/50 rounded-xl p-1.5 ring-1 ring-slate-200/50 overflow-hidden relative group hover:bg-slate-50 transition-all duration-300">
+                    <div class="flex items-center gap-3 px-4 py-1.5">
+                        <p
+                            class="text-xs font-bold text-slate-500 tracking-widest uppercase flex items-center gap-2 shrink-0">
+                            <span class="relative flex h-2 w-2">
+                                <span
+                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
+                            Process Flow
+                        </p>
+                        <span class="text-slate-300 text-sm">|</span>
+                        <div id="processFlowDisplay" class="flex items-center gap-3 flex-wrap flex-1"></div>
+                    </div>
+                </div>
+
+                <!-- Logo -->
+                <div
+                    class="flex items-center gap-4 flex-shrink-0 bg-white py-1.5 px-3 rounded-xl shadow-sm border border-slate-100">
+                    <img src="/logo.jpeg" alt="DoMS IIT Roorkee" class="block h-10 w-auto object-contain" />
+                    <div class="h-6 w-px bg-slate-200 mx-1"></div>
+                    <img id="headerCompanyLogo" src="" alt="Company Logo" style="display: none;"
+                        class="block h-10 w-auto object-contain" />
+                </div>
+            </div>
+
+            <!-- Controls / Toolbar -->
+            <div id="controls" class="fade-in mt-2"></div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-auto px-4 py-2">
+        <div class="max-w-full mx-auto">
+            <!-- Loading spinner -->
+            <div id="loading" class="text-center py-20">
+                <div
+                    class="inline-block animate-spin rounded-full h-12 w-12 border-[3px] border-slate-200 border-t-indigo-600">
+                </div>
+                <p class="mt-4 text-slate-500 font-medium text-sm tracking-wide">Loading interview data...</p>
+            </div>
+
+            <!-- Main Content -->
+            <div id="container" class="fade-in pb-10"></div>
+        </div>
+    </div>
+
+    <script>
+        const loadingDiv = document.getElementById('loading');
+        const containerDiv = document.getElementById('container');
+        const controlsDiv = document.getElementById('controls');
+
+        const uiFilters = {
+            statuses: new Set(['ongoing', 'beready', 'pending'])
+        };
+
+        const round2Filters = {
+            statuses: new Set(['ongoing', 'beready', 'pending'])
+        };
+
+        let allData = {
+            round1: [],
+            round2: [],
+            summary: {}
+        };
+
+        let previousDataState = {};
+        let maxPanelsToDisplay = 3;
+        let panelStatuses = {};
+        let round2Enabled = false;
+        let round1Enabled = true; // Default: enabled
+        let processFlow = [];
+        let currentCompanyLogoUrl = '';
+        let currentCompanyName = '';
+        let pollTimer;
+        let settingsTimer;
+
+        function getStatusBadgeClass(status) {
+            const v = status.toLowerCase().replace(/\s|-/g, '');
+            // Stronger contrast badge styles
+            if (v === 'ongoing') return 'bg-amber-100 text-amber-800 border border-amber-300';
+            if (v === 'pending') return 'bg-slate-100 text-slate-700 border border-slate-300';
+            if (v === 'done') return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+            if (v === 'beready') return 'bg-sky-100 text-sky-800 border border-sky-300';
+            return 'bg-gray-100 text-gray-700 border border-gray-300';
+        }
+
+        function getAvatarGradient(email) {
+            const gradients = [
+                'from-blue-500 to-indigo-600',
+                'from-violet-500 to-purple-600',
+                'from-amber-500 to-orange-600',
+                'from-emerald-500 to-teal-600',
+                'from-rose-500 to-pink-600',
+                'from-cyan-500 to-blue-600',
+                'from-fuchsia-500 to-rose-600',
+                'from-slate-600 to-slate-800'
+            ];
+            let hash = 0;
+            for (let i = 0; i < email.length; i++) {
+                hash = ((hash << 5) - hash) + email.charCodeAt(i);
+            }
+            return gradients[Math.abs(hash) % gradients.length];
+        }
+
+        function updateGridLayout(panelCount) {
+            const grid = containerDiv.querySelector('[data-grid]');
+            if (!grid) return;
+
+            if (panelCount === 1) {
+                grid.style.gridTemplateColumns = '1fr';
+            } else if (panelCount === 2) {
+                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+            } else if (panelCount === 3) {
+                grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            } else if (panelCount >= 4) {
+                grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            }
+        }
+
+        function getInitials(email) {
+            if (!email) return 'NA';
+            const name = email.split('@')[0] || '';
+            const parts = name.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').filter(Boolean);
+            const first = (parts[0] || '').charAt(0).toUpperCase();
+            const second = (parts[1] || '').charAt(0).toUpperCase();
+            return (first + second) || first || 'U';
+        }
+
+        function getNameFromEmail(email) {
+            if (!email || typeof email !== 'string') return 'Unknown';
+            const name = email.split('@')[0] || '';
+            return name
+                .replace(/[._-]/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+                .trim();
+        }
+
+        function buildListItem(item) {
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-slate-50 transition-all duration-200 group border border-transparent hover:border-slate-200 relative overflow-hidden';
+            li.dataset.itemId = item.Email;
+
+            li.innerHTML = `
+                <div class="min-w-0 flex items-center gap-3.5 flex-1 relative z-10">
+                    <div class="relative">
+                        ${item.Lin && item.Lin.trim() !== ''
+                    ? `<img src="${item.Lin.trim().toLowerCase() === 'm' ? 'm.jpg' : item.Lin.trim().toLowerCase() === 'f' ? 'f.avif' : ''}"
+                                    alt="${item.name}"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                    class="inline-flex h-10 w-10 rounded-full object-cover object-center border border-slate-300 flex-shrink-0"
+                                    title="${item.Email}" />
+                               <span class="hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-300 flex-shrink-0" title="${item.Email}">${getInitials(item.Email)}</span>`
+                    : `<span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-300 flex-shrink-0" title="${item.Email}">${getInitials(item.Email)}</span>`
+                }
+                        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center border border-slate-200">
+                             ${item.displayStatus.toLowerCase().replace(/\s|-/g, '') === 'ongoing'
+                    ? `<span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>`
+                    : item.displayStatus.toLowerCase().replace(/\s|-/g, '').includes('ready')
+                        ? `<span class="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>`
+                        : `<div class="w-2 h-2 rounded-full bg-slate-300"></div>`
+                }
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <p class="text-[15px] font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors" title="${item.name}">${item.name}</p>
+                    </div>
+                </div>
+                <span class="shrink-0 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider min-w-[90px] text-center ${getStatusBadgeClass(item.displayStatus)} transition-transform group-hover:scale-105 relative z-10">${item.displayStatus}</span>
+            `;
+            return li;
+        }
+
+        function renderCards(panelData) {
+            const panelsToShow = Array.isArray(panelData) ? panelData.slice(0, maxPanelsToDisplay) : [];
+
+            containerDiv.innerHTML = '';
+
+            const grid = document.createElement('div');
+            grid.dataset.grid = 'true';
+            grid.className = 'grid gap-1.5 w-full';
+            containerDiv.appendChild(grid);
+
+            const existingCards = new Map();
+            for (const el of grid.children) {
+                if (el.dataset && el.dataset.panelKey) existingCards.set(el.dataset.panelKey, el);
+            }
+
+            const nextKeys = new Set(panelsToShow.map(p => p.panel));
+
+            for (const [key, el] of existingCards) {
+                if (!nextKeys.has(key)) el.remove();
+            }
+
+            // Only render Round 1 cards if enabled
+            if (round1Enabled) {
+                for (const panelGroup of panelsToShow) {
+                    const items = Array.isArray(panelGroup && panelGroup.items) ? panelGroup.items : [];
+
+                    let card = existingCards.get(panelGroup.panel);
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.dataset.panelKey = panelGroup.panel;
+                        // Subtle Card Design - Stronger Border & Larger Font
+                        card.className = 'bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-300 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:border-blue-400 transition-all duration-300 overflow-hidden group flex flex-col relative';
+                        card.innerHTML = `
+                        <div class="absolute top-0 left-0 w-full h-[4px] bg-slate-200 group-hover:bg-blue-600 transition-colors duration-300"></div>
+                        <div class="flex items-start justify-between px-5 py-4 border-b border-slate-100 bg-white">
+                            <div class="flex-1">
+                                <h3 class="text-[17px] font-bold text-slate-800 group-hover:text-blue-700 transition-colors tracking-tight" data-title></h3>
+                            </div>
+                            <div class="flex items-center gap-2 pl-4">
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-md border transition-all duration-200" data-status-badge></span>
+                            </div>
+                        </div>
+                        <div class="px-3 py-3 flex-1 bg-white" data-body></div>
+                    `;
+                        grid.appendChild(card);
+                    }
+
+                    const panelStatus = panelStatuses[panelGroup.panel] || 'live';
+                    const statusBadge = card.querySelector('[data-status-badge]');
+                    if (statusBadge) {
+                        if (panelStatus === 'live') {
+                            statusBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>LIVE';
+                            statusBadge.className = 'inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-full border border-emerald-100/80 backdrop-blur-sm';
+                        } else {
+                            statusBadge.innerHTML = '<span class="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block shadow-[0_0_8px_rgba(244,63,94,0.4)]"></span>BREAK';
+                            statusBadge.className = 'inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-700 bg-rose-50/80 px-2.5 py-1 rounded-full border border-rose-100/80 backdrop-blur-sm';
+                        }
+                    }
+
+                    let panelHasUpdate = false;
+                    for (const item of items) {
+                        const itemKey = `${panelGroup.panel}-${item.Email}`;
+                        const prevState = previousDataState[itemKey];
+                        const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
+                        if (prevState && prevState !== currentState) {
+                            panelHasUpdate = true;
+                            break;
+                        }
+                    }
+
+                    if (panelHasUpdate) {
+                        card.classList.add('card-updated');
+                        setTimeout(() => card.classList.remove('card-updated'), 4500);
+                    }
+
+                    card.querySelector('[data-title]').textContent = panelGroup.panel;
+
+                    const body = card.querySelector('[data-body]');
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-1';
+
+                    const MAX_VISIBLE = 6;
+                    const visibleItems = items.slice(0, MAX_VISIBLE);
+                    const remaining = Math.max(0, items.length - MAX_VISIBLE);
+                    for (const item of visibleItems) {
+                        const li = buildListItem(item);
+
+                        const itemKey = `${panelGroup.panel}-${item.Email}`;
+                        const prevState = previousDataState[itemKey];
+                        const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
+
+                        if (prevState && prevState !== currentState) {
+                            li.classList.add('item-updated');
+                            setTimeout(() => li.classList.remove('item-updated'), 3000);
+                        }
+
+                        previousDataState[itemKey] = currentState;
+                        list.appendChild(li);
+                    }
+
+                    body.innerHTML = '';
+                    body.appendChild(list);
+
+                    if (items.length === 0 && panelGroup.allOver) {
+                        const note = document.createElement('div');
+                        note.className = 'py-12 text-center';
+                        note.innerHTML = `
+            <div class="text-3xl mb-3 opacity-100">✨</div>
+            <p class="text-sm font-bold text-gray-600">All interviews completed</p>
+          `;
+                        body.appendChild(note);
+                    } else if (remaining > 0) {
+                        const hiddenContainer = document.createElement('div');
+                        hiddenContainer.className = 'hidden space-y-1 mt-1';
+                        for (let i = MAX_VISIBLE; i < items.length; i++) {
+                            const item = items[i];
+                            const li = buildListItem(item);
+                            const itemKey = `${panelGroup.panel}-${item.Email}`;
+                            const prevState = previousDataState[itemKey];
+                            const currentState = JSON.stringify({ status: item.displayStatus, name: item.name });
+
+                            if (prevState && prevState !== currentState) {
+                                li.classList.add('item-updated');
+                                setTimeout(() => li.classList.remove('item-updated'), 3000);
+                            }
+
+                            previousDataState[itemKey] = currentState;
+                            hiddenContainer.appendChild(li);
+                        }
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.type = 'button';
+                        toggleBtn.className = 'w-full mt-2 py-2 text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100';
+                        toggleBtn.textContent = `Show ${remaining} more candidates`;
+                        let expanded = false;
+                        toggleBtn.addEventListener('click', () => {
+                            expanded = !expanded;
+                            hiddenContainer.classList.toggle('hidden', !expanded);
+                            toggleBtn.textContent = expanded ? 'Show less' : `Show ${remaining} more candidates`;
+                        });
+                        body.appendChild(toggleBtn);
+                        body.appendChild(hiddenContainer);
+                    }
+                }
+            }
+
+            if (round2Enabled && Array.isArray(allData.round2) && allData.round2.length > 0) {
+                const round2Container = document.createElement('div');
+                round2Container.className = 'mt-2'; // Reduced margin (was mt-8)
+
+                const heading = document.createElement('div');
+                heading.className = 'mb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-xl p-3 pl-6 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-200';
+
+                // Left side: Labels
+                const leftSide = document.createElement('div');
+                leftSide.className = 'flex items-center gap-3';
+                leftSide.innerHTML = `
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 text-white font-medium text-[11px] tracking-wide">
+                        Round 2 
+                    </span>
+                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-50 text-orange-700 font-semibold text-[11px] border border-orange-100">
+                        <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>Round 2 Shortlist Declared
+                    </span>
+                `;
+                heading.appendChild(leftSide);
+
+                // Right side: Filter Buttons (Independent Round 2 Filters)
+                const rightSide = document.createElement('div');
+                rightSide.className = 'flex items-center gap-2 flex-wrap';
+
+                const statusBtn = (key, label, colorClasses) => {
+                    const active = round2Filters.statuses.has(key); // Use round2Filters
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    const baseClasses = "px-3 py-1 rounded-lg text-[11px] font-semibold transition-all duration-200 flex items-center gap-1.5 border select-none";
+                    btn.className = active ? `${baseClasses} ${colorClasses.active}` : `${baseClasses} ${colorClasses.inactive}`;
+
+                    btn.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${colorClasses.dot}"></span>${label}`;
+                    btn.addEventListener('click', () => {
+                        if (round2Filters.statuses.has(key)) {
+                            round2Filters.statuses.delete(key);
+                        } else {
+                            round2Filters.statuses.add(key);
+                        }
+                        // We don't have a separate render function for Round 2 header yet, so we re-fetch
+                        // Ideally we should just re-render the header and the grid, but fetchData is safe
+                        fetchData();
+                    });
+                    return btn;
+                };
+
+                rightSide.appendChild(statusBtn('ongoing', 'On-Going', {
+                    active: 'bg-amber-50 text-amber-700 border-amber-200',
+                    inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                    dot: 'bg-amber-500'
+                }));
+                rightSide.appendChild(statusBtn('beready', 'Be Ready', {
+                    active: 'bg-sky-50 text-sky-700 border-sky-200',
+                    inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                    dot: 'bg-sky-500'
+                }));
+                rightSide.appendChild(statusBtn('pending', 'Pending', {
+                    active: 'bg-slate-100 text-slate-700 border-slate-200',
+                    inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                    dot: 'bg-slate-400'
+                }));
+
+                heading.appendChild(rightSide);
+                round2Container.appendChild(heading);
+
+                const round2Grid = document.createElement('div');
+                round2Grid.className = 'grid gap-1.5 w-full';
+                let round2PanelCount = allData.round2.length;
+                if (round2PanelCount === 1) {
+                    round2Grid.style.gridTemplateColumns = '1fr';
+                } else if (round2PanelCount === 2) {
+                    round2Grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                } else if (round2PanelCount >= 3) {
+                    round2Grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                }
+
+                allData.round2.forEach(panelGroup => {
+                    const candidates = Array.isArray(panelGroup && panelGroup.items) ? panelGroup.items : [];
+                    if (candidates.length === 0) return;
+
+                    const panelName = panelGroup.panel || 'Unknown Panel';
+
+                    const card = document.createElement('div');
+                    // Match the subtle card design
+                    card.className = 'bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-300 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] hover:border-blue-400 transition-all duration-300 overflow-hidden group flex flex-col relative';
+
+                    const panelStatus = panelStatuses[panelName] || 'live';
+                    let statusBadgeHtml = '';
+                    let statusBadgeClass = '';
+
+                    if (panelStatus === 'live') {
+                        statusBadgeHtml = '<span class="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_8px_rgba(16,185,129,0.4)]"></span>LIVE';
+                        statusBadgeClass = 'inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50/80 px-2.5 py-1 rounded-full border border-emerald-100/80 backdrop-blur-sm';
+                    } else {
+                        statusBadgeHtml = '<span class="h-1.5 w-1.5 rounded-full bg-rose-500 inline-block shadow-[0_0_8px_rgba(244,63,94,0.4)]"></span>BREAK';
+                        statusBadgeClass = 'inline-flex items-center gap-1.5 text-[10px] font-bold text-rose-700 bg-rose-50/80 px-2.5 py-1 rounded-full border border-rose-100/80 backdrop-blur-sm';
+                    }
+
+                    const header = document.createElement('div');
+                    header.className = 'flex items-start justify-between px-5 py-4 border-b border-slate-100 bg-white';
+                    header.innerHTML = `
+            <div class="flex-1">
+              <h3 class="text-[17px] font-bold text-slate-800 group-hover:text-blue-700 transition-colors tracking-tight">${panelName}</h3>
+            </div>
+            <div class="flex items-center gap-2 pl-4">
+              <span class="${statusBadgeClass}">
+                ${statusBadgeHtml}
+              </span>
+            </div>
+          `;
+
+                    const body = document.createElement('div');
+                    body.className = 'px-3 py-3 flex-1 bg-white max-h-[320px] overflow-y-auto custom-scrollbar'; // Added scrollable height
+
+                    const list = document.createElement('ul');
+                    list.className = 'space-y-2'; // Reduced gap to match compact design
+
+                    // Filter candidates based on round2Filters.statuses
+                    const activeStatuses = round2Filters.statuses;
+                    const displayCandidates = candidates.filter(c => {
+                        let status = normalizeStatus(c && c['Status']);
+                        if (status === '') status = 'pending'; // Treat empty status as pending
+                        return activeStatuses.has(status);
+                    });
+
+                    displayCandidates.forEach(candidate => {
+                        const li = document.createElement('li');
+                        li.className = 'flex items-center justify-between gap-3 p-3 rounded-xl hover:bg-indigo-50/50 transition-all duration-200 group border border-transparent hover:border-indigo-100/50';
+
+                        const candidateName = candidate.Name || getNameFromEmail(candidate.Email || '');
+                        const candidateEmail = candidate.Email || '';
+                        const statusDisplay = candidate.displayStatus || candidate['Status'] || 'Pending';
+
+                        li.innerHTML = `
+              <div class="min-w-0 flex items-center gap-3.5 flex-1 relative z-10">
+                <div class="relative">
+                    ${candidate.Lin && candidate.Lin.trim() !== ''
+                                ? `<img src="${candidate.Lin.trim().toLowerCase() === 'm' ? 'm.jpg' : candidate.Lin.trim().toLowerCase() === 'f' ? 'f.avif' : ''}" 
+                                alt="${candidateName}"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                class="inline-flex h-10 w-10 rounded-full object-cover object-center border border-slate-300 flex-shrink-0" 
+                                title="${candidateEmail}" />
+                           <span class="hidden inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-300 flex-shrink-0" title="${candidateEmail}">${getInitials(candidateEmail)}</span>`
+                                : `<span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-300 flex-shrink-0" title="${candidateEmail}">${getInitials(candidateEmail)}</span>`
+                            }
+                    <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-white rounded-full flex items-center justify-center border border-slate-200">
+                            ${statusDisplay.toLowerCase().replace(/\s|-/g, '') === 'ongoing'
+                                ? `<span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>`
+                                : statusDisplay.toLowerCase().replace(/\s|-/g, '').includes('ready')
+                                    ? `<span class="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>`
+                                    : `<div class="w-2 h-2 rounded-full bg-slate-300"></div>`
+                            }
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <p class="text-[15px] font-bold text-slate-800 truncate group-hover:text-blue-700 transition-colors" title="${candidateName}">${candidateName}</p>
+                </div>
+              </div>
+              <span class="shrink-0 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${getStatusBadgeClass(statusDisplay)} transition-transform group-hover:scale-105 relative z-10">${statusDisplay}</span>
+            `;
+                        list.appendChild(li);
+                    });
+
+                    body.appendChild(list);
+                    card.appendChild(header);
+                    card.appendChild(body);
+                    round2Grid.appendChild(card);
+                });
+
+                round2Container.appendChild(round2Grid);
+                containerDiv.appendChild(round2Container);
+            }
+
+            const visibleRound1Panels = panelsToShow.length;
+            updateGridLayout(visibleRound1Panels);
+
+            if ((panelData.length === 0 || !round1Enabled) && (!round2Enabled || !allData.round2 || allData.round2.length === 0)) {
+                containerDiv.innerHTML = '<div class="col-span-full text-center py-20"><p class="text-gray-500 text-lg font-medium">No active interviews at the moment.</p></div>';
+            }
+        }
+
+        function normalizeStatus(status) {
+            if (!status) return '';
+            return String(status)
+                .toLowerCase()
+                .trim()
+                .replace(/\s/g, '')
+                .replace(/-/g, '');
+        }
+
+        // Global State (Moved to top)
+        // let maxPanelsToDisplay = 3; // Already declared at top
+        // let uiFilters... // Already declared at top
+        // let round2Filters... // Moving to top
+        // let previousDataState... // Already declared at top
+        // let pollTimer; // Already declared at top
+        // let settingsTimer; // Already declared at top
+        // let allData... // Already declared at top
+        // let panelStatuses... // Already declared at top
+        // let round2Enabled... // Already declared at top
+        // let processFlow... // Already declared at top
+        // let currentCompanyLogoUrl... // Already declared at top
+        // let currentCompanyName... // Already declared at top
+
+        async function loadDisplaySettings() {
+            try {
+                const response = await fetch('/api/max-panels');
+                const result = await response.json();
+                maxPanelsToDisplay = result.maxPanels || 3;
+            } catch (error) {
+                console.error('Failed to load display settings:', error);
+                maxPanelsToDisplay = 3;
+            }
+        }
+
+        async function checkDisplaySettings() {
+            try {
+                const response = await fetch('/api/max-panels');
+                const data = await response.json();
+                if (data.maxPanels && data.maxPanels !== maxPanelsToDisplay) {
+                    maxPanelsToDisplay = data.maxPanels;
+                    // Re-render with new panel count
+                    await fetchData();
+                }
+            } catch (error) {
+                // silently fail for settings check
+            }
+        }
+
+        function renderControls() {
+            controlsDiv.innerHTML = '';
+            const bar = document.createElement('div');
+            // Floating Control Bar - Increased padding/width
+            bar.className = 'flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white rounded-xl p-3 pl-6 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-200';
+
+            const left = document.createElement('div');
+            left.className = 'flex items-center gap-3';
+            const roundLabel = document.createElement('span');
+            roundLabel.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 text-white font-medium text-[11px] tracking-wide';
+            roundLabel.innerHTML = `Round 1`;
+            left.appendChild(roundLabel);
+
+            // if (round2Enabled) {
+            //     const round2Label = document.createElement('span');
+            //     round2Label.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-orange-50 text-orange-700 font-semibold text-[11px] border border-orange-100';
+            //     round2Label.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>Results Declared`;
+            //     left.appendChild(round2Label);
+            // }
+
+            const center = document.createElement('div');
+            center.className = 'hidden md:block flex-1 text-center px-4';
+            center.innerHTML = `<span class="text-slate-500 font-medium text-sm tracking-tight">Welcome to the Recruitment Process for <span class="text-slate-800 font-bold text-lg ml-1">${currentCompanyName}</span> <span class="text-slate-400 mx-2">|</span> <span class="text-slate-600 font-semibold text-sm italic">We Wish You All The Best &nbsp ✨</span></span>`;
+
+            const right = document.createElement('div');
+            right.className = 'flex items-center gap-2 flex-wrap';
+
+            const statusBtn = (key, label, colorClasses) => {
+                const active = uiFilters.statuses.has(key);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                const baseClasses = "px-3 py-1 rounded-lg text-[11px] font-semibold transition-all duration-200 flex items-center gap-1.5 border select-none";
+                btn.className = active ? `${baseClasses} ${colorClasses.active}` : `${baseClasses} ${colorClasses.inactive}`;
+
+                btn.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${colorClasses.dot}"></span>${label}`;
+                btn.addEventListener('click', () => {
+                    if (uiFilters.statuses.has(key)) {
+                        uiFilters.statuses.delete(key);
+                    } else {
+                        uiFilters.statuses.add(key);
+                    }
+                    renderControls();
+                    fetchData();
+                });
+                return btn;
+            };
+
+            right.appendChild(statusBtn('ongoing', 'On-Going', {
+                active: 'bg-amber-50 text-amber-700 border-amber-200',
+                inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                dot: 'bg-amber-500'
+            }));
+            right.appendChild(statusBtn('beready', 'Be Ready', {
+                active: 'bg-sky-50 text-sky-700 border-sky-200',
+                inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                dot: 'bg-sky-500'
+            }));
+            right.appendChild(statusBtn('pending', 'Pending', {
+                active: 'bg-slate-100 text-slate-700 border-slate-200',
+                inactive: 'bg-white text-slate-500 border-transparent hover:bg-slate-50 hover:text-slate-700',
+                dot: 'bg-slate-400'
+            }));
+
+            bar.appendChild(left);
+            bar.appendChild(center);
+            bar.appendChild(right);
+            controlsDiv.appendChild(bar);
+        }
+
+        async function fetchData() {
+            try {
+                loadingDiv.style.display = 'none';
+                const statuses = Array.from(uiFilters.statuses).join(',');
+                const response = await fetch(`/api/data?statuses=${statuses}&round=round1`);
+                const result = await response.json();
+
+                if (result.success) {
+                    if (round2Enabled) {
+                        try {
+                            // Fix: Use round2Filters for Round 2 data fetching
+                            const round2Statuses = Array.from(round2Filters.statuses).join(',');
+                            const round2Response = await fetch(`/api/data?statuses=${round2Statuses}&round=round2`);
+                            const round2Result = await round2Response.json();
+                            if (round2Result.success) {
+                                allData.round2 = round2Result.data || [];
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch Round 2 data:', error);
+                            allData.round2 = [];
+                        }
+                    }
+                    renderCards(result.data);
+                } else {
+                    containerDiv.innerHTML = `<p class="text-red-600">Error: ${result.error}</p>`;
+                }
+            } catch (error) {
+                containerDiv.innerHTML = `<p class="text-red-600">Failed to load data: ${error.message}</p>`;
+            }
+        }
+
+        async function fetchPanelStatuses() {
+            try {
+                const response = await fetch('/api/panel-statuses');
+                const data = await response.json();
+                if (JSON.stringify(panelStatuses) !== JSON.stringify(data.statuses || {})) {
+                    panelStatuses = data.statuses || {};
+                    // Re-render to show updated status badges
+                    const statuses = Array.from(uiFilters.statuses).join(',');
+                    const dataResponse = await fetch(`/api/data?statuses=${statuses}&round=round1`);
+                    const result = await dataResponse.json();
+                    if (result.success) {
+                        // renderCards will use maxPanelsToDisplay to slice
+                        renderCards(result.data);
+                    }
+                }
+            } catch (error) {
+                // silently fail for status check
+            }
+        }
+
+        async function checkRound2Status() {
+            try {
+                const response = await fetch('/api/round2-enabled');
+                const data = await response.json();
+                console.log('Round 2 status check:', { current: round2Enabled, new: data.round2Enabled });
+                if (data.round2Enabled !== round2Enabled) {
+                    console.log('Round 2 status changed! Updating...');
+                    round2Enabled = data.round2Enabled;
+                    // Re-render controls to show/hide Round 2 indicator
+                    renderControls();
+                    // Re-fetch data to show/hide Round 2 section
+                    await fetchData();
+                    console.log('Round 2 update complete');
+                }
+            } catch (error) {
+                console.error('Error checking Round 2 status:', error);
+            }
+        }
+
+        async function checkRound1Status() {
+            try {
+                const response = await fetch('/api/round1-enabled');
+                const data = await response.json();
+                console.log('Round 1 status check:', { current: round1Enabled, new: data.round1Enabled });
+                if (data.round1Enabled !== round1Enabled) {
+                    console.log('Round 1 status changed! Updating...');
+                    round1Enabled = data.round1Enabled;
+                    // Re-render controls
+                    renderControls();
+                    // Re-fetch data to show/hide Round 1 section
+                    await fetchData();
+                    console.log('Round 1 update complete');
+                }
+            } catch (error) {
+                console.error('Error checking Round 1 status:', error);
+            }
+        }
+
+        async function fetchProcessFlow() {
+            try {
+                const response = await fetch('/api/process-flow');
+                const data = await response.json();
+                if (JSON.stringify(processFlow) !== JSON.stringify(data.processFlow || [])) {
+                    processFlow = data.processFlow || [];
+                    renderProcessFlow();
+                }
+            } catch (error) {
+                // silently fail for process flow check
+            }
+        }
+
+        function renderProcessFlow() {
+            const flowDisplay = document.getElementById('processFlowDisplay');
+            flowDisplay.innerHTML = '';
+
+            if (processFlow && processFlow.length > 0) {
+                const container = document.createElement('div');
+                container.className = 'flex items-center gap-2 flex-wrap';
+
+                processFlow.forEach((step, index) => {
+                    // Step badge
+                    const stepDiv = document.createElement('div');
+                    stepDiv.className = 'flex items-center gap-2';
+
+                    // Number circle
+                    const numberCircle = document.createElement('div');
+                    numberCircle.className = 'flex items-center justify-center w-6 h-6 rounded-full bg-blue-500 text-white text-xs font-bold shadow-sm';
+                    numberCircle.textContent = index + 1;
+
+                    // Step label
+                    const stepSpan = document.createElement('span');
+                    stepSpan.className = 'px-3 py-1.5 rounded-md bg-white text-slate-600 font-medium text-sm whitespace-nowrap border border-slate-200 shadow-sm';
+                    stepSpan.textContent = step;
+
+                    stepDiv.appendChild(numberCircle);
+                    stepDiv.appendChild(stepSpan);
+                    container.appendChild(stepDiv);
+
+                    // Add arrow between steps
+                    if (index < processFlow.length - 1) {
+                        const arrow = document.createElement('div');
+                        arrow.className = 'text-slate-300 font-bold text-base px-1';
+                        arrow.innerHTML = '→';
+                        container.appendChild(arrow);
+                    }
+                });
+
+                flowDisplay.appendChild(container);
+            } else {
+                // Show placeholder if no flow defined
+                const placeholder = document.createElement('p');
+                placeholder.className = 'text-sm text-slate-500 italic';
+                placeholder.textContent = 'No process flow defined yet';
+                flowDisplay.appendChild(placeholder);
+            }
+        }
+
+        async function fetchCompanySettings() {
+            try {
+                const logoResponse = await fetch('/api/logo');
+                const logoResult = await logoResponse.json();
+                if (logoResult.logoUrl) {
+                    currentCompanyLogoUrl = logoResult.logoUrl;
+                    const headerLogo = document.getElementById('headerCompanyLogo');
+                    if (headerLogo) {
+                        headerLogo.src = logoResult.logoUrl;
+                        headerLogo.style.display = 'block';
+                    }
+                }
+
+                const nameResponse = await fetch('/api/company-name');
+                const nameResult = await nameResponse.json();
+                if (nameResult.companyName) {
+                    currentCompanyName = nameResult.companyName;
+                    if (document.getElementById('controls').children.length > 0) {
+                        renderControls();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch company settings:', error);
+            }
+        }
+
+        async function init() {
+            try {
+                await fetchCompanySettings();
+                renderControls();
+                await loadDisplaySettings();
+                await checkRound1Status();
+                await checkRound2Status();
+                await fetchProcessFlow();
+                await fetchPanelStatuses();
+                await fetchData();
+                pollTimer = setInterval(fetchData, 10000);
+                settingsTimer = setInterval(checkDisplaySettings, 3000);
+                setInterval(fetchPanelStatuses, 2000);
+                setInterval(checkRound1Status, 2000); // Poll for Round 1 toggle
+                setInterval(checkRound2Status, 2000);
+                setInterval(fetchProcessFlow, 3000);
+                setInterval(fetchCompanySettings, 3000); // Poll for company logo/name changes
+            } catch (error) {
+                loadingDiv.innerHTML = `<p class="text-red-600">Failed to initialize: ${error.message}</p>`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
