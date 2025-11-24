@@ -1,13 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
-const { fetchAndParseSheets } = require('./utils/sheetsFetcher');
+const { fetchAndParseSheets, fetchSheetByName } = require('./utils/sheetsFetcher');
 const { filterAndGroupData } = require('./utils/dataProcessor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'interview-tracker-secret-key';
+const PLACEMENT_SHEET_ID = '1P6G0Ov1qG63WuDgvne2N582WL_C9DMI_RFUDA9Y1NOc';
 
 // Import JWT
 const jwt = require('jsonwebtoken');
@@ -242,6 +243,125 @@ app.get('/api/round1-enabled', (req, res) => {
 // Admin API: Get process flow
 app.get('/api/admin/process-flow', verifyAdminToken, (req, res) => {
   res.json({ success: true, processFlow });
+});
+
+// Placement Report API
+app.get('/api/placement-report', async (req, res) => {
+  try {
+    // Fetch Stats and Expected sheets
+    const [statsData, expectedData] = await Promise.all([
+      fetchSheetByName('Stats', PLACEMENT_SHEET_ID).catch(err => {
+        console.error('Error fetching Stats sheet:', err);
+        return [];
+      }),
+      fetchSheetByName('Expected', PLACEMENT_SHEET_ID).catch(err => {
+        console.error('Error fetching Expected sheet:', err);
+        return [];
+      })
+    ]);
+
+    // Process Stats Data
+    const placedStudents = statsData.filter(row =>
+      row['Placement Status'] && row['Placement Status'].toLowerCase() === 'placed'
+    );
+
+    // Helper to parse CTC
+    const parseCTC = (val) => {
+      if (!val) return 0;
+      const num = parseFloat(val.toString().replace(/,/g, ''));
+      return isNaN(num) ? 0 : num;
+    };
+
+    const ctcs = placedStudents
+      .map(row => parseCTC(row['Compensation (LPA)']))
+      .filter(ctc => ctc > 0)
+      .sort((a, b) => b - a); // Descending order
+
+    // Calculate Metrics
+    const totalPlaced = ctcs.length;
+    const averageCTC = totalPlaced > 0 ? ctcs.reduce((a, b) => a + b, 0) / totalPlaced : 0;
+
+    // Median
+    let medianCTC = 0;
+    if (totalPlaced > 0) {
+      const mid = Math.floor(totalPlaced / 2);
+      medianCTC = totalPlaced % 2 !== 0 ? ctcs[mid] : (ctcs[mid - 1] + ctcs[mid]) / 2;
+    }
+
+    // Top Percentiles
+    const getTopAverage = (percent) => {
+      if (totalPlaced === 0) return 0;
+      const count = Math.ceil(totalPlaced * (percent / 100));
+      const topCtcs = ctcs.slice(0, count);
+      return topCtcs.reduce((a, b) => a + b, 0) / topCtcs.length;
+    };
+
+    const top10Avg = getTopAverage(10);
+    const top25Avg = getTopAverage(25);
+
+    // Demographics (Engineers vs Non-Engineers)
+    // Considering all students in the stats sheet, or just placed? Usually demographics applies to the batch.
+    // Let's use all students in the sheet for demographics to show batch composition, 
+    // or placed students for placement composition. The prompt asks "percentage of engineers are placed", 
+    // implying we might need total engineers vs placed engineers, OR just the ratio within the placed set.
+    // "what percenteage of engineers are placed to what percentage of non engineers" -> This is slightly ambiguous.
+    // It could mean: (Placed Engineers / Total Engineers) vs (Placed Non-Engineers / Total Non-Engineers)
+    // OR: (Placed Engineers / Total Placed) vs (Placed Non-Engineers / Total Placed)
+    // Given "Placement Report", usually it shows the composition of the placed batch OR the success rate.
+    // Let's calculate both if possible, but for the dashboard "Engineers vs Non-Engineers" usually implies composition.
+    // Let's go with Composition of Placed Students for now as it's safer for a "Report".
+
+    const engineers = placedStudents.filter(row => row['Degree'] === 'B.Tech').length;
+    const nonEngineers = placedStudents.filter(row => row['Degree'] !== 'B.Tech').length;
+
+    // Work Experience
+    // "blank values should be treated as 0s"
+    // We can calculate average work ex for placed students
+    const workExs = placedStudents.map(row => {
+      const val = row['WorkEx'];
+      return (!val || val.trim() === '') ? 0 : parseFloat(val) || 0;
+    });
+    const avgWorkEx = workExs.length > 0 ? workExs.reduce((a, b) => a + b, 0) / workExs.length : 0;
+
+    const freshersCount = workExs.filter(ex => ex === 0).length;
+    const experiencedCount = workExs.filter(ex => ex > 0).length;
+
+    // Detailed Student List for Modal
+    const students = placedStudents.map(row => ({
+      name: row['Name'],
+      company: row['Company Name'],
+      ctc: parseCTC(row['Compensation (LPA)']),
+      degree: row['Degree'],
+      workEx: row['WorkEx']
+    })).sort((a, b) => b.ctc - a.ctc); // Sort by CTC descending
+
+    res.json({
+      success: true,
+      metrics: {
+        averageCTC,
+        medianCTC,
+        top10Avg,
+        top25Avg,
+        totalPlaced,
+        demographics: {
+          engineers,
+          nonEngineers,
+          total: engineers + nonEngineers
+        },
+        avgWorkEx,
+        workEx: {
+          freshers: freshersCount,
+          experienced: experiencedCount
+        }
+      },
+      expected: expectedData,
+      students: students // Send detailed list
+    });
+
+  } catch (error) {
+    console.error('Placement report error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Admin API: Set process flow

@@ -22,12 +22,14 @@ function normalizeRound2Row(row) {
   };
 }
 
-async function fetchSheetByName(sheetName) {
+async function fetchSheetByName(sheetName, targetSheetId = null) {
   try {
-    if (!SHEET_ID) throw new Error('GOOGLE_SHEET_ID is not set');
+    // Use provided sheet ID or fall back to default
+    const targetId = targetSheetId || SHEET_ID;
+    if (!targetId) throw new Error('No Sheet ID provided and default GOOGLE_SHEET_ID is not set');
 
     // Fetch from specific sheet by name (gid parameter for sheet ID, but we use sheet name in export)
-    const csvURL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    const csvURL = `https://docs.google.com/spreadsheets/d/${targetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
 
     let response;
     let lastErr;
@@ -65,7 +67,7 @@ async function fetchSheetByName(sheetName) {
     }
 
     const csv = response.data;
-    
+
     // Parse CSV
     const records = parse(csv, {
       columns: true,
@@ -117,4 +119,4 @@ async function fetchAndParseSheets() {
   }
 }
 
-module.exports = { fetchAndParseSheets };
+module.exports = { fetchAndParseSheets, fetchSheetByName };
